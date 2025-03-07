@@ -13,8 +13,8 @@ import javax.swing.JOptionPane;
 public class login extends javax.swing.JFrame {
     private int mouseX;
     private int mouseY;
-    private final String[] user = {"username", "good"};
-    private final String[] pass = {"password","shit"};
+    private final String[] user = {"1", "good"};
+    private final String[] pass = {"1","shit"};
     private final String[] stat = {"admin", "client"};
     private String status;
     private boolean loginSuccessful;
@@ -134,7 +134,7 @@ public class login extends javax.swing.JFrame {
                 .addComponent(jLabel4)
                 .addGap(35, 35, 35)
                 .addComponent(jLabel1)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 62, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 82, Short.MAX_VALUE)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(username, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jLabel2))
@@ -147,7 +147,7 @@ public class login extends javax.swing.JFrame {
                 .addGap(66, 66, 66))
         );
 
-        getContentPane().add(jPanel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, -1, -1));
+        getContentPane().add(jPanel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, -20, -1, 320));
 
         pack();
         setLocationRelativeTo(null);
@@ -214,11 +214,11 @@ public class login extends javax.swing.JFrame {
         if (loginSuccessful) {
             JOptionPane.showMessageDialog(null, "Login successful!");
             if(!status.equals("client")){
-                //this.dispose();
+                this.dispose();
                 main mn = new main();
                 mn.setVisible(loginSuccessful);
             }else{
-                //this.dispose();
+                this.dispose();
                 monggo mango = new monggo();
                 mango.setVisible(loginSuccessful);
             }
