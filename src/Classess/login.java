@@ -214,11 +214,11 @@ public class login extends javax.swing.JFrame {
         if (loginSuccessful) {
             JOptionPane.showMessageDialog(null, "Login successful!");
             if(!status.equals("client")){
-                //this.dispose();
+                this.dispose();
                 main mn = new main();
                 mn.setVisible(loginSuccessful);
             }else{
-                //this.dispose();
+                this.dispose();
                 monggo mango = new monggo();
                 mango.setVisible(loginSuccessful);
             }
