@@ -66,12 +66,12 @@ public class helper {
                     }
                     model.addRow(rowData);
                 }
-                
-                // Update the JTable on the Event Dispatch Thread.
-                SwingUtilities.invokeLater(() -> {
-                    thetable.setModel(model);
-                });
- 
+                if(model.getRowCount()==0){
+                    JOptionPane.showMessageDialog(null, "No records found.", "Search Result", JOptionPane.INFORMATION_MESSAGE);
+                    return;
+                }
+
+                thetable.setModel(model);
             
         } catch (SQLException e){
             JOptionPane.showMessageDialog(null,"SQL Error." + e.getMessage(),"Error", JOptionPane.ERROR_MESSAGE);
