@@ -12,7 +12,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import javax.swing.JOptionPane;
 import javax.swing.JTable;
-import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableModel;
 
 /**
@@ -37,6 +36,7 @@ public class helper {
     public void displaythis(String cat, int index, String whe, String lim, String delim, JTable thetable) {
         new Thread(() -> {
         try {
+            System.out.println("Thread " + Thread.currentThread().getName() + " - Preparing query");
             if (!whe.isBlank()){
                 String query = "select * from tblentry where "+ cat +" = ? "+ lim +" "+ delim;                
                 myPSTmt = myConn.prepareStatement(query);
@@ -50,7 +50,7 @@ public class helper {
                 }
                 myRs = myPSTmt.executeQuery();                
             }
-
+                System.out.println("Thread " + Thread.currentThread().getName() + " - Fetching results");
                 model = new DefaultTableModel();
                 ResultSetMetaData rsmd = (ResultSetMetaData) myRs.getMetaData();
                 int colCount = rsmd.getColumnCount();
@@ -66,12 +66,13 @@ public class helper {
                     }
                     model.addRow(rowData);
                 }
-                
-                // Update the JTable on the Event Dispatch Thread.
-                SwingUtilities.invokeLater(() -> {
-                    thetable.setModel(model);
-                });
- 
+                System.out.println("Thread " + Thread.currentThread().getName() + " - Updating UI with rows" );
+                if(model.getRowCount()==0){
+                    JOptionPane.showMessageDialog(null, "No records found.", "Search Result", JOptionPane.INFORMATION_MESSAGE);
+                    return;
+                }
+
+                thetable.setModel(model);
             
         } catch (SQLException e){
             JOptionPane.showMessageDialog(null,"SQL Error." + e.getMessage(),"Error", JOptionPane.ERROR_MESSAGE);

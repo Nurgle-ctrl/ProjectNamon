@@ -7,33 +7,28 @@ package Classess;
 import java.awt.event.ItemEvent;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import javax.swing.JOptionPane;
 
 /**
  *
  * @author Acer
  */
 public class main extends javax.swing.JFrame {
-    private helper helpus;
-    private String tablename = "thetable";
+    private final helper helpus;
+    private final String tablename = "thetable";
     private String category;
     private String where;
     private String postlimit;
     private String thelimit;
     private int index;
+    private final ExecutorService executor;
+    
     private void searchlimiter(){
-         if(!limit.getSelectedItem().toString().equals("Limit")){
-            limiter.setEnabled(false);
-            limiter.setVisible(false);
-        } else {
-             limiter.setEnabled(true);
-            limiter.setVisible(true);           
-        }
-        if(limit.getItemAt(1).equals("All")){
-            limiter.setEnabled(true);
-            limiter.setVisible(true);                
-        }         
+        boolean isLimit = "Limit".equals(limit.getSelectedItem());
+        limiter.setEnabled(isLimit);
+        limiter.setVisible(isLimit);
         limiter.revalidate();
-        limiter.repaint();       
+        limiter.repaint();      
     }    
     /**
      * Creates new form main
@@ -43,6 +38,7 @@ public class main extends javax.swing.JFrame {
         helpus = new helper();
         helpus.connector();
         searchlimiter();
+        executor = Executors.newFixedThreadPool(4);
     }
 
     /**
@@ -214,16 +210,25 @@ public class main extends javax.swing.JFrame {
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
         // TODO add your handling code here:
         category = columnnames.getSelectedItem().toString();
-        index = 1 + columnnames.getSelectedIndex();
-        where = jTextField1.getText();
+        index = columnnames.getSelectedIndex() + 1;
+        where = jTextField1.getText().trim();
         postlimit = limit.getSelectedItem().toString();
-        thelimit = limiter.getText();
-        System.out.println(index);
-        ExecutorService executor = Executors.newFixedThreadPool(8); // Adjust pool size as needed
+        thelimit = limiter.isEnabled() ? limiter.getText().trim() : "";
 
-        executor.submit(() -> {
-            helpus.displaythis(category, index, where, postlimit.equals("All") ? "" : thelimit, "", thetable);
-        });        
+        if (where.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "Please enter a search condition",
+                "Input Error", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        
+    
+    executor.submit(() -> {
+        System.out.println("Worker thread: " + Thread.currentThread().getName() + " - Query started");
+        helpus.displaythis(category, index, where, 
+            postlimit.equals("All") ? "" : thelimit, "", thetable);
+        System.out.println("Worker thread: " + Thread.currentThread().getName() + " - Query completed");
+    });     
         
 
             
@@ -275,6 +280,13 @@ public class main extends javax.swing.JFrame {
         setExtendedState(this.MAXIMIZED_BOTH);
     }//GEN-LAST:event_jLabel4MouseClicked
 
+    @Override
+    public void dispose() {
+        super.dispose();
+        if (executor != null && !executor.isShutdown()) {
+            executor.shutdown();
+        }
+    }
     /**
      * @param args the command line arguments
      */
