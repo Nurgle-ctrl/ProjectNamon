@@ -26,9 +26,10 @@ public class main extends javax.swing.JFrame {
     private void searchlimiter(){
         boolean isLimit = "Limit".equals(limit.getSelectedItem());
         limiter.setEnabled(isLimit);
-        limiter.setVisible(isLimit);
-        limiter.revalidate();
-        limiter.repaint();      
+        limiter.setVisible(isLimit);  
+        limiter.setEditable(isLimit);
+        jPanel1.revalidate(); 
+        jPanel1.repaint();
     }    
     /**
      * Creates new form main
@@ -38,7 +39,7 @@ public class main extends javax.swing.JFrame {
         helpus = new helper();
         helpus.connector();
         searchlimiter();
-        executor = Executors.newFixedThreadPool(4);
+        executor = Executors.newScheduledThreadPool(8);
     }
 
     /**
@@ -62,6 +63,7 @@ public class main extends javax.swing.JFrame {
         thetable = new javax.swing.JTable();
         jLabel3 = new javax.swing.JLabel();
         jLabel4 = new javax.swing.JLabel();
+        editor = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setUndecorated(true);
@@ -114,7 +116,7 @@ public class main extends javax.swing.JFrame {
             }
         });
 
-        columnnames.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Posted", "DatePosted", "DocNumber", "BusinessCode", "LocationCode", "ModuleCode", "AccountCode", "NormalBalance" }));
+        columnnames.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "EntryID", "Posted", "DatePosted", "DocNumber", "BusinessCode", "LocationCode", "ModuleCode", "AccountCode", "NormalBalance", "Amount", "Amount2", "Credit", "Debit", "FinalAmount" }));
         columnnames.setToolTipText("");
 
         thetable.setModel(new javax.swing.table.DefaultTableModel(
@@ -124,7 +126,15 @@ public class main extends javax.swing.JFrame {
             new String [] {
                 "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13"
             }
-        ));
+        ) {
+            boolean[] canEdit = new boolean [] {
+                false, false, false, false, false, false, false, false, false, false, false, false, false
+            };
+
+            public boolean isCellEditable(int rowIndex, int columnIndex) {
+                return canEdit [columnIndex];
+            }
+        });
         jScrollPane1.setViewportView(thetable);
 
         jLabel3.setText("damay di");
@@ -138,6 +148,13 @@ public class main extends javax.swing.JFrame {
         jLabel4.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 jLabel4MouseClicked(evt);
+            }
+        });
+
+        editor.setText("Edit");
+        editor.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                editorActionPerformed(evt);
             }
         });
 
@@ -171,6 +188,8 @@ public class main extends javax.swing.JFrame {
                         .addComponent(limit, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(limiter, javax.swing.GroupLayout.PREFERRED_SIZE, 71, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(editor)
                         .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
         );
         jPanel1Layout.setVerticalGroup(
@@ -190,7 +209,8 @@ public class main extends javax.swing.JFrame {
                     .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(limit, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(limiter, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(columnnames, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(columnnames, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(editor))
                 .addGap(28, 28, 28)
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 442, Short.MAX_VALUE)
                 .addGap(41, 41, 41))
@@ -212,7 +232,8 @@ public class main extends javax.swing.JFrame {
         category = columnnames.getSelectedItem().toString();
         index = columnnames.getSelectedIndex() + 1;
         where = jTextField1.getText().trim();
-        postlimit = limit.getSelectedItem().toString();
+        postlimit = limit.getSelectedItem().toString().toUpperCase().equalsIgnoreCase("all") ? "" : limit.getSelectedItem().toString().toUpperCase();
+        System.out.println(postlimit);
         thelimit = limiter.isEnabled() ? limiter.getText().trim() : "";
 
         if (where.isEmpty()) {
@@ -220,15 +241,17 @@ public class main extends javax.swing.JFrame {
                 "Input Error", JOptionPane.WARNING_MESSAGE);
             return;
         }
-
-        
+        boolean check = helpus.checker(category, index, where);
+        if (!check){
+            JOptionPane.showMessageDialog(null, "Invalid input! Please check your search condition.", "Input Error", JOptionPane.ERROR_MESSAGE);
+            return;             
+        }        
     
-    executor.submit(() -> {
-        System.out.println("Worker thread: " + Thread.currentThread().getName() + " - Query started");
-        helpus.displaythis(category, index, where, 
-            postlimit.equals("All") ? "" : thelimit, "", thetable);
-        System.out.println("Worker thread: " + Thread.currentThread().getName() + " - Query completed");
-    });     
+        executor.submit(() -> {
+            System.out.println("Worker thread: " + Thread.currentThread().getName() + " - Query started");
+            helpus.displaythis(category, index, where, postlimit, thelimit, thetable);
+            System.out.println("Worker thread: " + Thread.currentThread().getName() + " - Query completed");
+        });     
         
 
             
@@ -242,28 +265,26 @@ public class main extends javax.swing.JFrame {
     private void limiterMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_limiterMouseClicked
         // TODO add your handling code here:
         limiter.setText("");
+        limiter.setEnabled(true);
     }//GEN-LAST:event_limiterMouseClicked
 
     private void limitItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_limitItemStateChanged
         // TODO add your handling code here:
-        if (evt.getStateChange() == ItemEvent.SELECTED) {
-            String selected = evt.getItem().toString();
-            if ("Limit".equals(selected)) {
-                limiter.setEnabled(true);
-                limiter.setVisible(true);
-            } else {
-                limiter.setEnabled(false);
-                limiter.setVisible(false);
-            }
-            if(limit.getItemAt(1).equals("All")){
-                limiter.setEnabled(true);
-                limiter.setVisible(true);                
-            }
-        limiter.revalidate();
-        limiter.repaint();
-        }        
+        if (evt.getStateChange() == ItemEvent.SELECTED){
+            
+            boolean isLimit = "Limit".equals(limit.getSelectedItem());
+            limiter.setEnabled(isLimit);
+            limiter.setVisible(isLimit);
+            limiter.setEditable(isLimit);
+            jPanel1.revalidate(); 
+            jPanel1.repaint();
+            System.out.println("Item selected: " + limit.getSelectedItem());
+        }
+                
     }//GEN-LAST:event_limitItemStateChanged
 
+    
+    
     private void jTextField1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jTextField1MouseClicked
         // TODO add your handling code here:
         jTextField1.setText("");      
@@ -279,6 +300,28 @@ public class main extends javax.swing.JFrame {
         // TODO add your handling code here:
         setExtendedState(this.MAXIMIZED_BOTH);
     }//GEN-LAST:event_jLabel4MouseClicked
+
+    private void editorActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_editorActionPerformed
+        // TODO add your handling code here:
+int[] selectedRows = thetable.getSelectedRows(); // Get all selected rows
+
+if (selectedRows.length == 1) { // Ensure only one row is selected
+    int selectedRow = selectedRows[0]; // Get the single selected row
+    javax.swing.table.DefaultTableModel model = (javax.swing.table.DefaultTableModel) thetable.getModel();
+
+    // Enable editing for the selected row
+    for (int i = 0; i < model.getColumnCount(); i++) {
+        model.setValueAt(model.getValueAt(selectedRow, i), selectedRow, i);
+    }
+
+    thetable.editCellAt(selectedRow, 0); // Focus on the first cell for editing
+    JOptionPane.showMessageDialog(this, "Row " + (selectedRow + 1) + " is now editable.");
+} else if (selectedRows.length > 1) {
+    JOptionPane.showMessageDialog(this, "Please select only one row to edit.");
+} else {
+    JOptionPane.showMessageDialog(this, "Please select a row to edit.");
+}
+    }//GEN-LAST:event_editorActionPerformed
 
     @Override
     public void dispose() {
@@ -316,9 +359,11 @@ public class main extends javax.swing.JFrame {
 
         /* Create and display the form */
     }
+    
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JComboBox<String> columnnames;
+    private javax.swing.JButton editor;
     private javax.swing.JButton jButton1;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
