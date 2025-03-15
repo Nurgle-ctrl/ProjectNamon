@@ -6,12 +6,15 @@ package Classess;
 
 
 
+import com.mysql.jdbc.ResultSetMetaData;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Vector;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.JOptionPane;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableModel;
@@ -24,9 +27,9 @@ public class helper {
     private static final String URL = "jdbc:mysql://localhost:3306/amondb";
     private static final String USER = "root";
     private static final String PASSWORD = "";
-    private static Connection myConn = null;
-    private static PreparedStatement myPSTmt = null;
-    private static  ResultSet myRs = null;
+    private static Connection myConn;
+    private static PreparedStatement myPSTmt;
+    private static  ResultSet myRs;
     private static final DefaultTableModel model = new DefaultTableModel();
     
     void connector(){
@@ -40,6 +43,8 @@ public class helper {
     
     public void displaythis(String cat, int index, String whe, String lim, String delim, JTable thetable) {
         new Thread(() -> {
+            myPSTmt = null;
+            myRs = null;
             try {
                 
                 System.out.println("Thread " + Thread.currentThread().getName() + " - Preparing query");
@@ -60,37 +65,34 @@ public class helper {
                 }
                 System.out.println("Thread " + Thread.currentThread().getName() + " - Fetching results");
                     
-                Vector<String> columnNames = new Vector<>();
-                Vector<Vector<Object>> rowData = new Vector<>();
-                    
-                // Retrieve column names from ResultSet
-                int colCount = myRs.getMetaData().getColumnCount();
+                ResultSetMetaData metaData = (ResultSetMetaData) myRs.getMetaData();
+                int colCount = metaData.getColumnCount();
                 for (int i = 1; i <= colCount; i++) {
-                    columnNames.add(myRs.getMetaData().getColumnName(i));
-                }
-
-                // Add each row from the ResultSet to the rowData Vector
+                    model.addColumn(metaData.getColumnName(i));
+                 }
+                
                 while (myRs.next()) {
-                    Vector<Object> row = new Vector<>();
-                    for (int i = 1; i <= colCount; i++) {
-                        row.add(myRs.getObject(i));
+                    Object[] rowData = new Object[colCount];
+                    for (int i = 0; i < colCount; i++) {
+                        rowData[i] = myRs.getObject(i + 1);
                     }
-                    rowData.add(row);
+                    model.addRow(rowData);
                 }
                 
-                System.out.println("Thread " + Thread.currentThread().getName() + " - Updating UI with rows" );
-                if (rowData.isEmpty()) {
-                    model.setRowCount(0);
-                    JOptionPane.showMessageDialog(null, "No records found.", "Search Result", JOptionPane.INFORMATION_MESSAGE);
-                    return;
-                }
-
-                // Set the model with column names and data
-                model.setDataVector(rowData, columnNames);
                 thetable.setModel(model);
                 thetable.setDefaultEditor(Object.class, null);
+
+                if (model.getRowCount() == 0) {
+                   JOptionPane.showMessageDialog(null, "No records found.", "Search Result", JOptionPane.INFORMATION_MESSAGE);
+                }
             } catch (SQLException e){
                 JOptionPane.showMessageDialog(null,"SQL Error." + e.getMessage(),"Error", JOptionPane.ERROR_MESSAGE);
+            } finally {
+                try {
+                    myPSTmt.close();
+                } catch (SQLException ex) {
+                    Logger.getLogger(helper.class.getName()).log(Level.SEVERE, null, ex);
+                }
             }
         }).start(); 
            
@@ -98,30 +100,25 @@ public class helper {
     public boolean checker(String cat, int index, String whe) {
         try {
             switch (index) {
-                case 1, 2 -> // Index 1 and 2 should be an integer
-                    Integer.valueOf(whe);
+                case 1, 2 -> Integer.valueOf(whe);
                 case 3 -> {
-                    // Index 3 should be a valid date
-                    if (!whe.matches("\\d{4}-\\d{2}-\\d{2}")) { // Example format: YYYY-MM-DD
+                    if (!whe.matches("\\d{4}-\\d{2}-\\d{2}")) { // format: YYYY-MM-DD
                         return false;
                     }
                 }
                 case 4, 5, 6, 7, 9 -> {
-                    // These indexes should be a string (no numbers allowed)
-                    if (whe.matches(".*\\d.*")) { // If it contains any digit, return false
+                    if (whe.matches(".*\\d.*")) {
                         return false;
                     }
                 }
-                case 8, 10, 11, 12, 13, 14 -> // These indexes should be a double (floating-point number)
-                    Double.valueOf(whe);
-                default -> {
-                    return false; // If the index is outside the expected range, return false
+                case 8, 10, 11, 12, 13, 14 -> Double.valueOf(whe);
+                default -> { return false; 
                 }
             }
         } catch (NumberFormatException e) {
-            return false; // Return false if parsing fails
+            return false;
         }
-        return true; // If all conditions pass, return true
+        return true;
     }
 
 

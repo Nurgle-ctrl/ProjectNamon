@@ -39,7 +39,7 @@ public class main extends javax.swing.JFrame {
         helpus = new helper();
         helpus.connector();
         searchlimiter();
-        executor = Executors.newScheduledThreadPool(8);
+        executor = Executors.newFixedThreadPool(4);
     }
 
     /**
@@ -303,24 +303,22 @@ public class main extends javax.swing.JFrame {
 
     private void editorActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_editorActionPerformed
         // TODO add your handling code here:
-int[] selectedRows = thetable.getSelectedRows(); // Get all selected rows
+        int[] selectedRows = thetable.getSelectedRows(); // Get all selected rows
 
-if (selectedRows.length == 1) { // Ensure only one row is selected
-    int selectedRow = selectedRows[0]; // Get the single selected row
-    javax.swing.table.DefaultTableModel model = (javax.swing.table.DefaultTableModel) thetable.getModel();
+        if (selectedRows.length == 1) { // Ensure only one row is selected
+            int selectedRow = selectedRows[0]; // Get the single selected row
 
-    // Enable editing for the selected row
-    for (int i = 0; i < model.getColumnCount(); i++) {
-        model.setValueAt(model.getValueAt(selectedRow, i), selectedRow, i);
-    }
-
-    thetable.editCellAt(selectedRow, 0); // Focus on the first cell for editing
-    JOptionPane.showMessageDialog(this, "Row " + (selectedRow + 1) + " is now editable.");
-} else if (selectedRows.length > 1) {
-    JOptionPane.showMessageDialog(this, "Please select only one row to edit.");
-} else {
-    JOptionPane.showMessageDialog(this, "Please select a row to edit.");
-}
+            // Enable editing for the selected row
+            for (int i = 0; i < thetable.getColumnCount(); i++) {
+                thetable.setValueAt(thetable.getValueAt(selectedRow, i), selectedRow, i);
+            }
+            thetable.editCellAt(selectedRow, 1); // Focus on the first cell for editing
+            JOptionPane.showMessageDialog(this, "Row " + (selectedRow + 1) + " is now editable.");
+        } else if (selectedRows.length > 1) {
+            JOptionPane.showMessageDialog(this, "Please select only one row to edit.");
+        } else {
+            JOptionPane.showMessageDialog(this, "Please select a row to edit.");
+        }
     }//GEN-LAST:event_editorActionPerformed
 
     @Override
