@@ -15,13 +15,13 @@ import javax.swing.JOptionPane;
  */
 public class main extends javax.swing.JFrame {
     private final helper helpus;
-    private final String tablename = "thetable";
     private String category;
     private String where;
     private String postlimit;
     private String thelimit;
     private int index;
     private final ExecutorService executor;
+    private int editableRow = -1;
     
     private void searchlimiter(){
         boolean isLimit = "Limit".equals(limit.getSelectedItem());
@@ -36,10 +36,11 @@ public class main extends javax.swing.JFrame {
      */
     public main() {
         initComponents();
-        helpus = new helper();
+        executor = Executors.newFixedThreadPool(4);    
+        helpus = new helper(executor);
         helpus.connector();
         searchlimiter();
-        executor = Executors.newFixedThreadPool(4);
+
     }
 
     /**
@@ -64,6 +65,9 @@ public class main extends javax.swing.JFrame {
         jLabel3 = new javax.swing.JLabel();
         jLabel4 = new javax.swing.JLabel();
         editor = new javax.swing.JButton();
+        adder = new javax.swing.JButton();
+        Saver = new javax.swing.JButton();
+        Deleter = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setUndecorated(true);
@@ -136,6 +140,21 @@ public class main extends javax.swing.JFrame {
             }
         });
         jScrollPane1.setViewportView(thetable);
+        if (thetable.getColumnModel().getColumnCount() > 0) {
+            thetable.getColumnModel().getColumn(0).setResizable(false);
+            thetable.getColumnModel().getColumn(1).setResizable(false);
+            thetable.getColumnModel().getColumn(2).setResizable(false);
+            thetable.getColumnModel().getColumn(3).setResizable(false);
+            thetable.getColumnModel().getColumn(4).setResizable(false);
+            thetable.getColumnModel().getColumn(5).setResizable(false);
+            thetable.getColumnModel().getColumn(6).setResizable(false);
+            thetable.getColumnModel().getColumn(7).setResizable(false);
+            thetable.getColumnModel().getColumn(8).setResizable(false);
+            thetable.getColumnModel().getColumn(9).setResizable(false);
+            thetable.getColumnModel().getColumn(10).setResizable(false);
+            thetable.getColumnModel().getColumn(11).setResizable(false);
+            thetable.getColumnModel().getColumn(12).setResizable(false);
+        }
 
         jLabel3.setText("damay di");
         jLabel3.addMouseListener(new java.awt.event.MouseAdapter() {
@@ -158,6 +177,27 @@ public class main extends javax.swing.JFrame {
             }
         });
 
+        adder.setText("Add");
+        adder.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                adderActionPerformed(evt);
+            }
+        });
+
+        Saver.setText("Update");
+        Saver.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                SaverActionPerformed(evt);
+            }
+        });
+
+        Deleter.setText("Delete");
+        Deleter.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                DeleterActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
@@ -176,9 +216,6 @@ public class main extends javax.swing.JFrame {
                 .addGap(27, 27, 27)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 870, Short.MAX_VALUE)
-                        .addGap(29, 29, 29))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
                         .addComponent(columnnames, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, 233, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -188,9 +225,16 @@ public class main extends javax.swing.JFrame {
                         .addComponent(limit, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(limiter, javax.swing.GroupLayout.PREFERRED_SIZE, 71, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 25, Short.MAX_VALUE)
+                        .addComponent(editor, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(editor)
-                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
+                        .addComponent(Saver, javax.swing.GroupLayout.PREFERRED_SIZE, 55, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(adder, javax.swing.GroupLayout.PREFERRED_SIZE, 59, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(Deleter))
+                    .addComponent(jScrollPane1))
+                .addGap(29, 29, 29))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -203,16 +247,19 @@ public class main extends javax.swing.JFrame {
                         .addComponent(jLabel2)
                         .addComponent(jLabel3)
                         .addComponent(jLabel4)))
-                .addGap(18, 18, 18)
+                .addGap(29, 29, 29)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jButton1)
                     .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(limit, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(limiter, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(columnnames, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(editor))
+                    .addComponent(editor)
+                    .addComponent(Saver)
+                    .addComponent(adder)
+                    .addComponent(Deleter))
                 .addGap(28, 28, 28)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 442, Short.MAX_VALUE)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 431, Short.MAX_VALUE)
                 .addGap(41, 41, 41))
         );
 
@@ -235,7 +282,6 @@ public class main extends javax.swing.JFrame {
         postlimit = limit.getSelectedItem().toString().toUpperCase().equalsIgnoreCase("all") ? "" : limit.getSelectedItem().toString().toUpperCase();
         System.out.println(postlimit);
         thelimit = limiter.isEnabled() ? limiter.getText().trim() : "";
-
         if (where.isEmpty()) {
             JOptionPane.showMessageDialog(null, "Please enter a search condition",
                 "Input Error", JOptionPane.WARNING_MESSAGE);
@@ -245,16 +291,8 @@ public class main extends javax.swing.JFrame {
         if (!check){
             JOptionPane.showMessageDialog(null, "Invalid input! Please check your search condition.", "Input Error", JOptionPane.ERROR_MESSAGE);
             return;             
-        }        
-    
-        executor.submit(() -> {
-            System.out.println("Worker thread: " + Thread.currentThread().getName() + " - Query started");
-            helpus.displaythis(category, index, where, postlimit, thelimit, thetable);
-            System.out.println("Worker thread: " + Thread.currentThread().getName() + " - Query completed");
-        });     
-        
-
-            
+        }           
+        helpus.displaythis(category, index, where, postlimit, thelimit, thetable);    
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void limitActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_limitActionPerformed
@@ -298,28 +336,36 @@ public class main extends javax.swing.JFrame {
 
     private void jLabel4MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabel4MouseClicked
         // TODO add your handling code here:
-        setExtendedState(this.MAXIMIZED_BOTH);
+        setExtendedState(main.MAXIMIZED_BOTH);
     }//GEN-LAST:event_jLabel4MouseClicked
 
     private void editorActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_editorActionPerformed
         // TODO add your handling code here:
-        int[] selectedRows = thetable.getSelectedRows(); // Get all selected rows
-
-        if (selectedRows.length == 1) { // Ensure only one row is selected
-            int selectedRow = selectedRows[0]; // Get the single selected row
-
-            // Enable editing for the selected row
-            for (int i = 0; i < thetable.getColumnCount(); i++) {
-                thetable.setValueAt(thetable.getValueAt(selectedRow, i), selectedRow, i);
-            }
-            thetable.editCellAt(selectedRow, 1); // Focus on the first cell for editing
-            JOptionPane.showMessageDialog(this, "Row " + (selectedRow + 1) + " is now editable.");
+        int[] selectedRows = thetable.getSelectedRows();
+        if (selectedRows.length == 1) {
+            editableRow = selectedRows[0];
+            JOptionPane.showMessageDialog(this, "You are now editing row " + (editableRow + 1));
         } else if (selectedRows.length > 1) {
             JOptionPane.showMessageDialog(this, "Please select only one row to edit.");
         } else {
             JOptionPane.showMessageDialog(this, "Please select a row to edit.");
         }
     }//GEN-LAST:event_editorActionPerformed
+
+    private void SaverActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SaverActionPerformed
+        // TODO add your handling code here:
+        helpus.saveUpdate(editableRow, thetable);
+    }//GEN-LAST:event_SaverActionPerformed
+
+    private void adderActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_adderActionPerformed
+        // TODO add your handling code here:
+        helpus.addNewEntry(thetable);
+    }//GEN-LAST:event_adderActionPerformed
+
+    private void DeleterActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_DeleterActionPerformed
+        // TODO add your handling code here:
+        helpus.deleteEntry(thetable);
+    }//GEN-LAST:event_DeleterActionPerformed
 
     @Override
     public void dispose() {
@@ -360,6 +406,9 @@ public class main extends javax.swing.JFrame {
     
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton Deleter;
+    private javax.swing.JButton Saver;
+    private javax.swing.JButton adder;
     private javax.swing.JComboBox<String> columnnames;
     private javax.swing.JButton editor;
     private javax.swing.JButton jButton1;
