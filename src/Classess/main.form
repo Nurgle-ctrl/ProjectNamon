@@ -9,6 +9,10 @@
     <SyntheticProperty name="formSizePolicy" type="int" value="1"/>
     <SyntheticProperty name="generateCenter" type="boolean" value="true"/>
   </SyntheticProperties>
+  <Events>
+    <EventHandler event="mouseDragged" listener="java.awt.event.MouseMotionListener" parameters="java.awt.event.MouseEvent" handler="formMouseDragged"/>
+    <EventHandler event="mousePressed" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="formMousePressed"/>
+  </Events>
   <AuxValues>
     <AuxValue name="FormSettings_autoResourcing" type="java.lang.Integer" value="0"/>
     <AuxValue name="FormSettings_autoSetComponentName" type="java.lang.Boolean" value="false"/>
@@ -66,10 +70,8 @@
                           <Component id="limit" min="-2" max="-2" attributes="0"/>
                           <EmptySpace max="-2" attributes="0"/>
                           <Component id="limiter" min="-2" pref="71" max="-2" attributes="0"/>
-                          <EmptySpace pref="25" max="32767" attributes="0"/>
+                          <EmptySpace pref="86" max="32767" attributes="0"/>
                           <Component id="editor" min="-2" pref="60" max="-2" attributes="0"/>
-                          <EmptySpace max="-2" attributes="0"/>
-                          <Component id="Saver" min="-2" pref="55" max="-2" attributes="0"/>
                           <EmptySpace max="-2" attributes="0"/>
                           <Component id="adder" min="-2" pref="59" max="-2" attributes="0"/>
                           <EmptySpace max="-2" attributes="0"/>
@@ -103,7 +105,6 @@
                       <Component id="limiter" alignment="3" min="-2" max="-2" attributes="0"/>
                       <Component id="columnnames" alignment="3" min="-2" max="-2" attributes="0"/>
                       <Component id="editor" alignment="3" min="-2" max="-2" attributes="0"/>
-                      <Component id="Saver" alignment="3" min="-2" max="-2" attributes="0"/>
                       <Component id="adder" alignment="3" min="-2" max="-2" attributes="0"/>
                       <Component id="Deleter" alignment="3" min="-2" max="-2" attributes="0"/>
                   </Group>
@@ -330,14 +331,6 @@
           </Properties>
           <Events>
             <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="adderActionPerformed"/>
-          </Events>
-        </Component>
-        <Component class="javax.swing.JButton" name="Saver">
-          <Properties>
-            <Property name="text" type="java.lang.String" value="Update"/>
-          </Properties>
-          <Events>
-            <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="SaverActionPerformed"/>
           </Events>
         </Component>
         <Component class="javax.swing.JButton" name="Deleter">

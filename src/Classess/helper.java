@@ -19,7 +19,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JOptionPane;
 import javax.swing.JTable;
-import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableModel;
 
 /**
@@ -33,8 +32,9 @@ public class helper {
     private static Connection myConn;
     private static PreparedStatement myPSTmt;
     private static  ResultSet myRs;
+    private static String query = null;
     private static final DefaultTableModel model = new DefaultTableModel();
-    private final ExecutorService executor;
+    private final ExecutorService executor;    
     
     public helper(ExecutorService executor) {
         this.executor = executor;
@@ -51,25 +51,50 @@ public class helper {
     
     public void displaythis(String cat, int index, String whe, String lim, String delim, JTable thetable) {
         executor.submit(() -> {
+            try {
             myPSTmt = null;
             myRs = null;
             model.setRowCount(0);
-            try {
+            System.out.println(index);                
                 
                 System.out.println("Thread " + Thread.currentThread().getName() + " - Preparing query");
                 if (!whe.isBlank()){
-                    String query = "select * from tblentry where "+ cat +" = ? "+ lim +" "+ delim;  
-                    System.out.println(query);
-                    myPSTmt = myConn.prepareStatement(query);
                     switch (index) {
-                        case 1 -> myPSTmt.setInt(1, Integer.parseInt(whe));
-                        case 2 -> myPSTmt.setDouble(1, Double.parseDouble(whe));
-                        case 3 -> {
-                            java.sql.Date sqlDate = java.sql.Date.valueOf(whe);
-                            myPSTmt.setDate(1, sqlDate);
+                        case 1, 2 -> {
+                            query = "select * from tblentry where "+ cat +" = ? "+ lim +" "+ delim;
+                            myPSTmt = myConn.prepareStatement(query);
+                            myPSTmt.setInt(1, Integer.parseInt(whe));
                         }
-                        default -> myPSTmt.setString(1, whe);
+                        case 8, 10, 11, 12, 13, 14 -> {
+                            query = "select * from tblentry where "+ cat +" = ? "+ lim +" "+ delim;
+                            myPSTmt = myConn.prepareStatement(query);
+                            myPSTmt.setDouble(1, Double.parseDouble(whe));                            
+                        }
+                        case 3 -> {
+                            if (whe.matches("\\d{4}-\\d{2}-\\d{2}")) {
+                                query = "select * from tblentry where " + cat + " = ? " + lim + " " + delim;
+                                myPSTmt = myConn.prepareStatement(query);
+                                java.sql.Date sqlDate = java.sql.Date.valueOf(whe);
+                                myPSTmt.setDate(1, sqlDate);
+                            } else if (whe.matches("\\d{4}-\\d{2}")) { // Year and month: YYYY-MM
+                                query = "select * from tblentry where year(" + cat + ") = ? and month(" + cat + ") = ? " + lim + " " + delim;
+                                myPSTmt = myConn.prepareStatement(query);
+                                String[] parts = whe.split("-");
+                                myPSTmt.setInt(1, Integer.parseInt(parts[0])); // Year
+                                myPSTmt.setInt(2, Integer.parseInt(parts[1])); // Month
+                            } else { // Year only: YYYY
+                                query = "select * from tblentry where year(" + cat + ") = ? " + lim + " " + delim;
+                                myPSTmt = myConn.prepareStatement(query);
+                                myPSTmt.setInt(1, Integer.parseInt(whe)); // Year
+                            }
+                        }
+                        default -> {
+                            query = "select * from tblentry where "+ cat +" = ? "+ lim +" "+ delim;
+                            myPSTmt = myConn.prepareStatement(query);                            
+                            myPSTmt.setString(1, whe);
+                        }
                     }
+                    System.out.println(query);
                     myRs = myPSTmt.executeQuery();                
                 }
                 System.out.println("Thread " + Thread.currentThread().getName() + " - Fetching results");
@@ -115,9 +140,18 @@ public class helper {
             switch (index) {
                 case 1, 2 -> Integer.valueOf(whe);
                 case 3 -> {
-                    if (!whe.matches("\\d{4}-\\d{2}-\\d{2}")) { // format: YYYY-MM-DD
-                        return false;
+                    if (whe.matches("\\d{4}-\\d{2}-\\d{2}")) {
+                    return true;
                     }
+                    // Check for year and month (YYYY-MM)
+                    if (whe.matches("\\d{4}-\\d{2}")) {
+                        return true;
+                    }
+                    // Check for year only (YYYY)
+                    if (whe.matches("\\d{4}")) {
+                        return true;
+                    }
+                    return false;
                 }
                 case 4, 5, 6, 7, 9 -> {
                     if (whe.matches(".*\\d.*")) {
@@ -133,136 +167,115 @@ public class helper {
         }
         return true;
     }
-    public void saveUpdate(int editableRow, JTable thetable) {
-        executor.submit(() -> {           
-            if (editableRow != -1) {
-                Vector<Object> rowData = new Vector<>();
-                for (int i = 0; i < model.getColumnCount(); i++) {
-                    rowData.add(model.getValueAt(editableRow, i));
-                }
-                try {
-                    String updateQuery = "UPDATE tblentry SET EntryID = ?, Posted = ?, DatePosted = ?, DocNumber = ?, BusinessCode = ?, LocationCode = ?, ModuleCode = ?, AccountCode = ?, NormalBalance = ?, Amount = ?, Amount2 = ?, Credit = ?, Debit = ?, FinalAmount = ? WHERE EntryID = ?";
-                    myPSTmt = myConn.prepareStatement(updateQuery);
-                    for (int i = 0; i < rowData.size(); i++) {
-                        if (rowData.get(i) instanceof Integer integer) {
-                            myPSTmt.setInt(i + 1, integer);
-                        } else if (rowData.get(i) instanceof Double aDouble) {
-                            myPSTmt.setDouble(i + 1, aDouble);
-                        } else if (rowData.get(i) instanceof java.sql.Date date) {
-                            myPSTmt.setDate(i + 1, date);
-                        } else {
-                            myPSTmt.setString(i + 1, rowData.get(i) != null ? rowData.get(i).toString() : null);
-                        }
-                    }
-                    myPSTmt.setInt(15, (Integer) rowData.get(0));
-                    myPSTmt.executeUpdate();
-
-                    System.out.println("Database updated for row " + editableRow);
-                    JOptionPane.showMessageDialog(null, "Row " + (editableRow + 1) + " updated successfully.");
-                    myPSTmt.close();
-                } catch (SQLException e) {
-                    System.err.println("Update failed: " + e.getMessage());
-                }
-            } else {
-                JOptionPane.showMessageDialog(null, "No row selected for updating.", "Error", JOptionPane.ERROR_MESSAGE);
-            }
-        });    
-    }
-                
-    public void addNewEntry(JTable thetable) {
+    public void addEntry(String[] data){
         executor.submit(() -> {
-            String[] fields = {"Posted", "DatePosted (YYYY-MM-DD)", "DocNumber", "BusinessCode", "LocationCode", "ModuleCode", "AccountCode", "NormalBalance", "Amount", "Amount2", "Credit", "Debit", "FinalAmount"};
-            Vector<Object> newEntryData = new Vector<>();
-
-            for (String field : fields) {
-                String value = JOptionPane.showInputDialog(null, "Enter " + field + ":");
-                if (value == null) { 
-                    JOptionPane.showMessageDialog(null, "Entry addition cancelled.", "Info", JOptionPane.INFORMATION_MESSAGE);
-                    return;
-                }
-                try {
-                    switch (field) {
-                        case "DatePosted (YYYY-MM-DD)":
-                            newEntryData.add(Date.parse(value));
-                            break;
-                        case "Amount":
-                        case "Amount2":
-                        case "Credit":
-                        case "Debit":
-                        case "FinalAmount":
-                            newEntryData.add(Double.valueOf(value));
-                            break;
-                        default:
-                            newEntryData.add(value);
-                    }
-                } catch (IllegalArgumentException e) {
-                    JOptionPane.showMessageDialog(null, "Invalid input for " + field + ": " + e.getMessage(), "Input Error", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-            }
-            try {
-                String insertQuery = "INSERT INTO tblentry (Posted, DatePosted, DocNumber, BusinessCode, LocationCode, ModuleCode, AccountCode, NormalBalance, Amount, Amount2, Credit, Debit, FinalAmount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-                myPSTmt = myConn.prepareStatement(insertQuery);
-                for (int i = 0; i < newEntryData.size(); i++) {
-                    if (newEntryData.get(i) instanceof Integer) {
-                        myPSTmt.setInt(i + 1, (Integer) newEntryData.get(i));
-                    } else if (newEntryData.get(i) instanceof Double) {
-                        myPSTmt.setDouble(i + 1, (Double) newEntryData.get(i));
-                    } else if (newEntryData.get(i) instanceof java.sql.Date) {
-                        myPSTmt.setDate(i + 1, (java.sql.Date) newEntryData.get(i));
-                    } else {
-                        myPSTmt.setString(i + 1, newEntryData.get(i) != null ? newEntryData.get(i).toString() : null);
-                    }
-                }
-                myPSTmt.executeUpdate();
-                System.out.println("New entry added to database");
-                JOptionPane.showMessageDialog(null, "New entry added successfully.");
-                myPSTmt.close();
-            } catch (SQLException e) {
-                System.err.println("Insert failed: " + e.getMessage());
-                JOptionPane.showMessageDialog(null, "Failed to add entry.", "Error", JOptionPane.ERROR_MESSAGE);
-            }
+            if (data == null || data.length != 13) {
+                JOptionPane.showMessageDialog(null, "Invalid data", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+           }        
+           try {
+               query = "INSERT INTO tblentry (Posted, DatePosted, DocNumber, BusinessCode, LocationCode, ModuleCode, AccountCode, NormalBalance, Amount, Amount2, Credit, Debit, FinalAmount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+               myPSTmt = myConn.prepareStatement(query);
+               myPSTmt.setInt(1, Integer.parseInt(data[0]));
+               myPSTmt.setDate(2, java.sql.Date.valueOf(data[1])); // Assumes YYYY-MM-DD format
+               myPSTmt.setString(3, data[2]);
+               myPSTmt.setString(4, data[3]);
+               myPSTmt.setString(5, data[4]);
+               myPSTmt.setString(6, data[5]);
+               myPSTmt.setString(7, data[6]);
+               myPSTmt.setString(8, data[7]);
+               myPSTmt.setDouble(9, Double.parseDouble(data[8]));
+               myPSTmt.setDouble(10, Double.parseDouble(data[9]));
+               myPSTmt.setDouble(11, Double.parseDouble(data[10]));
+               myPSTmt.setDouble(12, Double.parseDouble(data[11]));
+               myPSTmt.setDouble(13, Double.parseDouble(data[12]));
+               myPSTmt.executeUpdate();
+               myPSTmt.close();
+               JOptionPane.showMessageDialog(null, "Entry added successfully!");
+           } catch (SQLException | NumberFormatException e) {
+               JOptionPane.showMessageDialog(null, "Error adding entry: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+           }    
         });
     }
-
-    public void deleteEntry(JTable thetable) {
+//    public String[] getter(JTable thetable, int editableRow){
+//        String[] data = new String[14];
+//        executor.submit(() -> {
+//        data[0] = thetable.getValueAt(editableRow, 0).toString();
+//        data[1] = thetable.getValueAt(editableRow, 1).toString();
+//        data[2] = thetable.getValueAt(editableRow, 2).toString();
+//        data[3] = thetable.getValueAt(editableRow, 3).toString();
+//        data[4] = thetable.getValueAt(editableRow, 4).toString();
+//        data[5] = thetable.getValueAt(editableRow, 5).toString();
+//        data[6] = thetable.getValueAt(editableRow, 6).toString();
+//        data[7] = thetable.getValueAt(editableRow, 7).toString();
+//        data[8] = thetable.getValueAt(editableRow, 8).toString();
+//        data[9] = thetable.getValueAt(editableRow, 9).toString();
+//        data[10] = thetable.getValueAt(editableRow, 10).toString();
+//        data[11] = thetable.getValueAt(editableRow, 11).toString();
+//        data[12] = thetable.getValueAt(editableRow, 12).toString();
+//        data[13] = thetable.getValueAt(editableRow, 13).toString();   
+//        return data;
+//        });
+//        return data;
+//    }
+    public void updateEntry(String[] data, String entryId, int row, JTable thetable){
+        if (data == null || data.length != 13) {
+            JOptionPane.showMessageDialog(null, "Invalid data: must provide 13 elements.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }        
         executor.submit(() -> {
-        int[] selectedRows = thetable.getSelectedRows();
-            if (selectedRows.length == 1) {
-            int selectedRow = selectedRows[0];
-            int entryId = (Integer) model.getValueAt(selectedRow, 0);
-
-            int confirm = JOptionPane.showConfirmDialog(null, 
-                "Are you sure you want to delete row " + (selectedRow + 1) + " with EntryID " + entryId + "?",
-                "Confirm Delete", JOptionPane.YES_NO_OPTION);
-            if (confirm == JOptionPane.YES_OPTION) {
-                
-                    try {
-                        String deleteQuery = "DELETE FROM tblentry WHERE EntryID = ?";
-                        PreparedStatement pstmt = myConn.prepareStatement(deleteQuery);
-                        pstmt.setInt(1, entryId);
-                        int rowsAffected = pstmt.executeUpdate();
-
-                        if (rowsAffected > 0) {
-                            JOptionPane.showMessageDialog(null, "Row deleted successfully.");
-                        } else {
-                            JOptionPane.showMessageDialog(null, "Failed to delete row.", "Error", JOptionPane.ERROR_MESSAGE);
-                        }
-                    } catch (SQLException e) {
-                        System.err.println("Delete failed: " + e.getMessage());
-                        JOptionPane.showMessageDialog(null, "Failed to delete row.", "Error", JOptionPane.ERROR_MESSAGE);
-                    }
-
+            try {
+                myPSTmt = myConn.prepareStatement("UPDATE tblentry SET Posted = ?, DatePosted = ?, DocNumber = ?, BusinessCode = ?, LocationCode = ?, ModuleCode = ?, AccountCode = ?, NormalBalance = ?, Amount = ?, Amount2 = ?, Credit = ?, Debit = ?, FinalAmount = ? WHERE EntryID = ?");
+                myPSTmt.setInt(1, Integer.parseInt(data[0]));
+                myPSTmt.setDate(2, java.sql.Date.valueOf(data[1]));
+                myPSTmt.setString(3, data[2]);
+                myPSTmt.setString(4, data[3]);
+                myPSTmt.setString(5, data[4]);
+                myPSTmt.setString(6, data[5]);
+                myPSTmt.setString(7, data[6]);
+                myPSTmt.setString(8, data[7]);
+                myPSTmt.setDouble(9, Double.parseDouble(data[8]));
+                myPSTmt.setDouble(10, Double.parseDouble(data[9]));
+                myPSTmt.setDouble(11, Double.parseDouble(data[10]));
+                myPSTmt.setDouble(12, Double.parseDouble(data[11]));
+                myPSTmt.setDouble(13, Double.parseDouble(data[12]));
+                myPSTmt.setInt(14, Integer.parseInt(entryId));
+                int rowsAffected = myPSTmt.executeUpdate();
+                if (rowsAffected > 0) {
+                    JOptionPane.showMessageDialog(null, "Entry updated successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+                } else {
+                    JOptionPane.showMessageDialog(null, "No entry found with EntryID: " + entryId, "Error", JOptionPane.ERROR_MESSAGE);
+                }
+                myPSTmt.close();
+                thetable.setValueAt(entryId, row, 0);
+                for (int i = 0; i < data.length; i++) {
+                    thetable.setValueAt(data[i], row, i+1);
+                }              
+            } catch (SQLException e) {
+                JOptionPane.showMessageDialog(null, "Error updating entry: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            } catch (NumberFormatException e) {
+                JOptionPane.showMessageDialog(null, "Error updating entry: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            } catch (IllegalArgumentException e){
+                JOptionPane.showMessageDialog(null, "Error updating entry: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
-            } else if (selectedRows.length > 1) {
-                JOptionPane.showMessageDialog(null, "Please select only one row to delete.", "Error", JOptionPane.ERROR_MESSAGE);
-            } else {
-                JOptionPane.showMessageDialog(null, "Please select a row to delete.", "Error", JOptionPane.ERROR_MESSAGE);
-            }   
-                            });
-    }    
-    
-
-
+        });        
+    }
+    public void deleteEntry(String entryId) {
+        executor.submit(() -> {
+            try {
+                myPSTmt = myConn.prepareStatement("DELETE FROM tblentry WHERE EntryID = ?");
+                myPSTmt.setString(1, entryId);
+                int rowsAffected = myPSTmt.executeUpdate();
+                if (rowsAffected > 0) {
+                    JOptionPane.showMessageDialog(null, "Entry deleted successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+                } else {
+                    JOptionPane.showMessageDialog(null, "No entry found with EntryID: " + entryId, "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            } catch (SQLException e) {
+                JOptionPane.showMessageDialog(null, "Error deleting entry: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+    }     
+  
    
 }

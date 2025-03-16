@@ -8,19 +8,23 @@ import java.awt.event.ItemEvent;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import javax.swing.JOptionPane;
+import javax.swing.table.DefaultTableModel;
 
 /**
  *
  * @author Acer
  */
 public class main extends javax.swing.JFrame {
+    private int mouseX;
+    private int mouseY;
     private final helper helpus;
+    private final entry entriable;
+    private final ExecutorService executor;
     private String category;
     private String where;
     private String postlimit;
     private String thelimit;
     private int index;
-    private final ExecutorService executor;
     private int editableRow = -1;
     
     private void searchlimiter(){
@@ -35,9 +39,10 @@ public class main extends javax.swing.JFrame {
      * Creates new form main
      */
     public main() {
+        executor = Executors.newScheduledThreadPool(100000);
+        helpus = new helper(executor); 
+        entriable = new entry(helpus);
         initComponents();
-        executor = Executors.newFixedThreadPool(4);    
-        helpus = new helper(executor);
         helpus.connector();
         searchlimiter();
 
@@ -66,11 +71,20 @@ public class main extends javax.swing.JFrame {
         jLabel4 = new javax.swing.JLabel();
         editor = new javax.swing.JButton();
         adder = new javax.swing.JButton();
-        Saver = new javax.swing.JButton();
         Deleter = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setUndecorated(true);
+        addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+            public void mouseDragged(java.awt.event.MouseEvent evt) {
+                formMouseDragged(evt);
+            }
+        });
+        addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mousePressed(java.awt.event.MouseEvent evt) {
+                formMousePressed(evt);
+            }
+        });
 
         jPanel1.setBackground(new java.awt.Color(255, 255, 51));
         jPanel1.setPreferredSize(new java.awt.Dimension(926, 574));
@@ -184,13 +198,6 @@ public class main extends javax.swing.JFrame {
             }
         });
 
-        Saver.setText("Update");
-        Saver.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                SaverActionPerformed(evt);
-            }
-        });
-
         Deleter.setText("Delete");
         Deleter.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -225,10 +232,8 @@ public class main extends javax.swing.JFrame {
                         .addComponent(limit, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(limiter, javax.swing.GroupLayout.PREFERRED_SIZE, 71, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 25, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 86, Short.MAX_VALUE)
                         .addComponent(editor, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(Saver, javax.swing.GroupLayout.PREFERRED_SIZE, 55, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(adder, javax.swing.GroupLayout.PREFERRED_SIZE, 59, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -255,7 +260,6 @@ public class main extends javax.swing.JFrame {
                     .addComponent(limiter, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(columnnames, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(editor)
-                    .addComponent(Saver)
                     .addComponent(adder)
                     .addComponent(Deleter))
                 .addGap(28, 28, 28)
@@ -344,28 +348,68 @@ public class main extends javax.swing.JFrame {
         int[] selectedRows = thetable.getSelectedRows();
         if (selectedRows.length == 1) {
             editableRow = selectedRows[0];
-            JOptionPane.showMessageDialog(this, "You are now editing row " + (editableRow + 1));
+//            String[] data = helpus.getter(thetable, editableRow);
+            entriable.setEntryId(thetable.getValueAt(editableRow, 0).toString());
+            entriable.setPosted(thetable.getValueAt(editableRow, 1).toString());
+            entriable.setDatePosted(thetable.getValueAt(editableRow, 2).toString());
+            entriable.setDocNumber(thetable.getValueAt(editableRow, 3).toString());
+            entriable.setBusinessCode(thetable.getValueAt(editableRow, 4).toString());
+            entriable.setLocationCode(thetable.getValueAt(editableRow, 5).toString());
+            entriable.setModuleCode(thetable.getValueAt(editableRow, 6).toString());
+            entriable.setAccountCode(thetable.getValueAt(editableRow, 7).toString());
+            entriable.setNormalBalance(thetable.getValueAt(editableRow, 8).toString());
+            entriable.setAmount(thetable.getValueAt(editableRow, 9).toString());
+            entriable.setAmount2(thetable.getValueAt(editableRow, 10).toString());
+            entriable.setCredit(thetable.getValueAt(editableRow, 11).toString());
+            entriable.setDebit(thetable.getValueAt(editableRow, 12).toString());
+            entriable.setFinalAmount(thetable.getValueAt(editableRow, 13).toString());
+            entriable.setVisible(true);
+            entriable.editedRow(selectedRows[0], thetable);
+            
         } else if (selectedRows.length > 1) {
-            JOptionPane.showMessageDialog(this, "Please select only one row to edit.");
+            JOptionPane.showMessageDialog(this, "Please select only one row to edit.", "Error", JOptionPane.ERROR_MESSAGE);
         } else {
-            JOptionPane.showMessageDialog(this, "Please select a row to edit.");
+            JOptionPane.showMessageDialog(this, "Please select a row to edit.", "Error", JOptionPane.ERROR_MESSAGE);
         }
     }//GEN-LAST:event_editorActionPerformed
 
-    private void SaverActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SaverActionPerformed
-        // TODO add your handling code here:
-        helpus.saveUpdate(editableRow, thetable);
-    }//GEN-LAST:event_SaverActionPerformed
-
     private void adderActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_adderActionPerformed
         // TODO add your handling code here:
-        helpus.addNewEntry(thetable);
+        entriable.setVisible(true);
+        
     }//GEN-LAST:event_adderActionPerformed
 
     private void DeleterActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_DeleterActionPerformed
         // TODO add your handling code here:
-        helpus.deleteEntry(thetable);
+        int[] selectedRows = thetable.getSelectedRows();
+        if (selectedRows.length == 0) {
+            JOptionPane.showMessageDialog(this, "Please select at least one row to delete.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        int confirm = JOptionPane.showConfirmDialog(this, "Are you sure you want to delete " + selectedRows.length + " row(s)?", "Confirm Delete", JOptionPane.YES_NO_OPTION);
+        if (confirm == JOptionPane.YES_OPTION) {
+            DefaultTableModel model = (DefaultTableModel) thetable.getModel();
+            for (int row : selectedRows) {
+                String entryId = thetable.getValueAt(row, 0).toString();
+                helpus.deleteEntry(entryId);
+                entriable.editedRow(selectedRows[0], thetable);
+                model.removeRow(row);
+            }   
+        }
     }//GEN-LAST:event_DeleterActionPerformed
+
+    private void formMousePressed(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_formMousePressed
+        // TODO add your handling code here:
+    mouseX = evt.getX();
+    mouseY = evt.getY();
+    }//GEN-LAST:event_formMousePressed
+
+    private void formMouseDragged(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_formMouseDragged
+        // TODO add your handling code here:
+    int x = evt.getXOnScreen();
+    int y = evt.getYOnScreen();
+    this.setLocation(x - mouseX, y - mouseY);
+    }//GEN-LAST:event_formMouseDragged
 
     @Override
     public void dispose() {
@@ -407,7 +451,6 @@ public class main extends javax.swing.JFrame {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton Deleter;
-    private javax.swing.JButton Saver;
     private javax.swing.JButton adder;
     private javax.swing.JComboBox<String> columnnames;
     private javax.swing.JButton editor;
