@@ -39,13 +39,13 @@ public class main extends javax.swing.JFrame {
      * Creates new form main
      */
     public main() {
-        executor = Executors.newScheduledThreadPool(100000);
+        executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
         helpus = new helper(executor); 
         entriable = new entry(helpus);
         initComponents();
         helpus.connector();
         searchlimiter();
-
+        jTextField1.setVisible(false);
     }
 
     /**
@@ -58,23 +58,18 @@ public class main extends javax.swing.JFrame {
     private void initComponents() {
 
         jPanel1 = new javax.swing.JPanel();
-        jLabel1 = new javax.swing.JLabel();
-        jLabel2 = new javax.swing.JLabel();
-        jButton1 = new javax.swing.JButton();
+        DISPLAY = new javax.swing.JButton();
         jTextField1 = new javax.swing.JTextField();
         limit = new javax.swing.JComboBox<>();
         limiter = new javax.swing.JTextField();
         columnnames = new javax.swing.JComboBox<>();
         jScrollPane1 = new javax.swing.JScrollPane();
         thetable = new javax.swing.JTable();
-        jLabel3 = new javax.swing.JLabel();
-        jLabel4 = new javax.swing.JLabel();
         editor = new javax.swing.JButton();
         adder = new javax.swing.JButton();
         Deleter = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setUndecorated(true);
         addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
             public void mouseDragged(java.awt.event.MouseEvent evt) {
                 formMouseDragged(evt);
@@ -86,22 +81,13 @@ public class main extends javax.swing.JFrame {
             }
         });
 
-        jPanel1.setBackground(new java.awt.Color(255, 255, 51));
+        jPanel1.setBackground(new java.awt.Color(0, 0, 102));
         jPanel1.setPreferredSize(new java.awt.Dimension(926, 574));
 
-        jLabel1.setText("Ano nadi?");
-
-        jLabel2.setText("ekis nadi");
-        jLabel2.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
-                jLabel2MouseClicked(evt);
-            }
-        });
-
-        jButton1.setText("Display");
-        jButton1.addActionListener(new java.awt.event.ActionListener() {
+        DISPLAY.setText("Display");
+        DISPLAY.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton1ActionPerformed(evt);
+                DISPLAYActionPerformed(evt);
             }
         });
 
@@ -133,20 +119,30 @@ public class main extends javax.swing.JFrame {
                 limiterMouseClicked(evt);
             }
         });
+        limiter.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                limiterActionPerformed(evt);
+            }
+        });
 
-        columnnames.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "EntryID", "Posted", "DatePosted", "DocNumber", "BusinessCode", "LocationCode", "ModuleCode", "AccountCode", "NormalBalance", "Amount", "Amount2", "Credit", "Debit", "FinalAmount" }));
+        columnnames.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "All", "EntryID", "Posted", "DatePosted", "DocNumber", "BusinessCode", "LocationCode", "ModuleCode", "AccountCode", "NormalBalance", "Amount", "Amount2", "Credit", "Debit", "FinalAmount" }));
         columnnames.setToolTipText("");
+        columnnames.addItemListener(new java.awt.event.ItemListener() {
+            public void itemStateChanged(java.awt.event.ItemEvent evt) {
+                columnnamesItemStateChanged(evt);
+            }
+        });
 
         thetable.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
 
             },
             new String [] {
-                "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13"
+                "ENTRY ID", "POSTED", "DATE POSTED", "DOC NUMBER", "BUSINESS CODE", "LOCATION CODE", "MODULE CODE", "ACCOUNT CODE", "NORMAL BALANCE", "AMOUNT", "AMOUNT 2", "CREDIT", "DEBIT", "FINAL AMOUNT"
             }
         ) {
             boolean[] canEdit = new boolean [] {
-                false, false, false, false, false, false, false, false, false, false, false, false, false
+                false, false, false, false, false, false, false, false, false, false, false, false, false, false
             };
 
             public boolean isCellEditable(int rowIndex, int columnIndex) {
@@ -168,21 +164,8 @@ public class main extends javax.swing.JFrame {
             thetable.getColumnModel().getColumn(10).setResizable(false);
             thetable.getColumnModel().getColumn(11).setResizable(false);
             thetable.getColumnModel().getColumn(12).setResizable(false);
+            thetable.getColumnModel().getColumn(13).setResizable(false);
         }
-
-        jLabel3.setText("damay di");
-        jLabel3.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
-                jLabel3MouseClicked(evt);
-            }
-        });
-
-        jLabel4.setText("dako di");
-        jLabel4.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
-                jLabel4MouseClicked(evt);
-            }
-        });
 
         editor.setText("Edit");
         editor.addActionListener(new java.awt.event.ActionListener() {
@@ -210,16 +193,6 @@ public class main extends javax.swing.JFrame {
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jLabel1)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(jLabel4)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(jLabel3)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(jLabel2)
-                .addContainerGap())
-            .addGroup(jPanel1Layout.createSequentialGroup()
                 .addGap(27, 27, 27)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel1Layout.createSequentialGroup()
@@ -227,7 +200,7 @@ public class main extends javax.swing.JFrame {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, 233, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(jButton1)
+                        .addComponent(DISPLAY)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(limit, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -244,17 +217,9 @@ public class main extends javax.swing.JFrame {
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addContainerGap()
-                        .addComponent(jLabel1))
-                    .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(jLabel2)
-                        .addComponent(jLabel3)
-                        .addComponent(jLabel4)))
-                .addGap(29, 29, 29)
+                .addGap(51, 51, 51)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jButton1)
+                    .addComponent(DISPLAY)
                     .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(limit, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(limiter, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -273,12 +238,7 @@ public class main extends javax.swing.JFrame {
         setLocationRelativeTo(null);
     }// </editor-fold>//GEN-END:initComponents
 
-    private void jLabel2MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabel2MouseClicked
-        // TODO add your handling code here:
-        System.exit(0);
-    }//GEN-LAST:event_jLabel2MouseClicked
-
-    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+    private void DISPLAYActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_DISPLAYActionPerformed
         // TODO add your handling code here:
         category = columnnames.getSelectedItem().toString();
         index = columnnames.getSelectedIndex() + 1;
@@ -286,18 +246,21 @@ public class main extends javax.swing.JFrame {
         postlimit = limit.getSelectedItem().toString().toUpperCase().equalsIgnoreCase("all") ? "" : limit.getSelectedItem().toString().toUpperCase();
         System.out.println(postlimit);
         thelimit = limiter.isEnabled() ? limiter.getText().trim() : "";
-        if (where.isEmpty()) {
-            JOptionPane.showMessageDialog(null, "Please enter a search condition",
-                "Input Error", JOptionPane.WARNING_MESSAGE);
+        if (where.isEmpty() && !category.equals("All")) {
+            JOptionPane.showMessageDialog(null, "Please enter a search condition","Input Error", JOptionPane.WARNING_MESSAGE);
             return;
+        }
+        if (!limit.getSelectedItem().equals("all") && limiter.getText().isEmpty()) {
+            JOptionPane.showMessageDialog(null, "Limiter is not limiting", "Limiter Error", JOptionPane.ERROR_MESSAGE);
+            return;            
         }
         boolean check = helpus.checker(category, index, where);
         if (!check){
-            JOptionPane.showMessageDialog(null, "Invalid input! Please check your search condition.", "Input Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(null, "Invalid input!", "Input Error", JOptionPane.ERROR_MESSAGE);
             return;             
         }           
         helpus.displaythis(category, index, where, postlimit, thelimit, thetable);    
-    }//GEN-LAST:event_jButton1ActionPerformed
+    }//GEN-LAST:event_DISPLAYActionPerformed
 
     private void limitActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_limitActionPerformed
         // TODO add your handling code here:
@@ -315,6 +278,7 @@ public class main extends javax.swing.JFrame {
         if (evt.getStateChange() == ItemEvent.SELECTED){
             
             boolean isLimit = "Limit".equals(limit.getSelectedItem());
+            limiter.setText("");
             limiter.setEnabled(isLimit);
             limiter.setVisible(isLimit);
             limiter.setEditable(isLimit);
@@ -332,23 +296,13 @@ public class main extends javax.swing.JFrame {
         jTextField1.setText("");      
     }//GEN-LAST:event_jTextField1MouseClicked
 
-    private void jLabel3MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabel3MouseClicked
-        // TODO add your handling code here:
-        this.setSize(926, 574);
-        setLocationRelativeTo(null);
-    }//GEN-LAST:event_jLabel3MouseClicked
-
-    private void jLabel4MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabel4MouseClicked
-        // TODO add your handling code here:
-        setExtendedState(main.MAXIMIZED_BOTH);
-    }//GEN-LAST:event_jLabel4MouseClicked
-
     private void editorActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_editorActionPerformed
         // TODO add your handling code here:
         int[] selectedRows = thetable.getSelectedRows();
         if (selectedRows.length == 1) {
             editableRow = selectedRows[0];
 //            String[] data = helpus.getter(thetable, editableRow);
+            entriable.entryID.setVisible(true);
             entriable.setEntryId(thetable.getValueAt(editableRow, 0).toString());
             entriable.setPosted(thetable.getValueAt(editableRow, 1).toString());
             entriable.setDatePosted(thetable.getValueAt(editableRow, 2).toString());
@@ -375,8 +329,8 @@ public class main extends javax.swing.JFrame {
 
     private void adderActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_adderActionPerformed
         // TODO add your handling code here:
-        entriable.setVisible(true);
-        
+        entriable.setField();        
+        entriable.setVisible(true);        
     }//GEN-LAST:event_adderActionPerformed
 
     private void DeleterActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_DeleterActionPerformed
@@ -385,8 +339,11 @@ public class main extends javax.swing.JFrame {
         if (selectedRows.length == 0) {
             JOptionPane.showMessageDialog(this, "Please select at least one row to delete.", "Error", JOptionPane.ERROR_MESSAGE);
             return;
+        } else if (selectedRows.length > 1) {
+            JOptionPane.showMessageDialog(this, "Please select only one row to delete.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
         }
-        int confirm = JOptionPane.showConfirmDialog(this, "Are you sure you want to delete " + selectedRows.length + " row(s)?", "Confirm Delete", JOptionPane.YES_NO_OPTION);
+        int confirm = JOptionPane.showConfirmDialog(this, "Are you sure you want to delete row" + selectedRows[0] + "?", "Confirm Delete", JOptionPane.YES_NO_OPTION);
         if (confirm == JOptionPane.YES_OPTION) {
             DefaultTableModel model = (DefaultTableModel) thetable.getModel();
             for (int row : selectedRows) {
@@ -411,9 +368,28 @@ public class main extends javax.swing.JFrame {
     this.setLocation(x - mouseX, y - mouseY);
     }//GEN-LAST:event_formMouseDragged
 
+    private void limiterActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_limiterActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_limiterActionPerformed
+
+    private void columnnamesItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_columnnamesItemStateChanged
+        // TODO add your handling code here:
+        if (evt.getStateChange() == ItemEvent.SELECTED){
+            
+            boolean isLimit = "All".equals(columnnames.getSelectedItem());
+            jTextField1.setText("condition");
+            jTextField1.setEnabled(!isLimit);
+            jTextField1.setVisible(!isLimit);
+            jTextField1.setEditable(!isLimit);
+            jPanel1.revalidate(); 
+            jPanel1.repaint();
+        }        
+    }//GEN-LAST:event_columnnamesItemStateChanged
+
     @Override
     public void dispose() {
         super.dispose();
+        helpus.closeResources();
         if (executor != null && !executor.isShutdown()) {
             executor.shutdown();
         }
@@ -446,19 +422,20 @@ public class main extends javax.swing.JFrame {
         //</editor-fold>
 
         /* Create and display the form */
+        java.awt.EventQueue.invokeLater(new Runnable() {
+            public void run() {
+                new main().setVisible(true);
+            }
+        });
     }
     
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton DISPLAY;
     private javax.swing.JButton Deleter;
     private javax.swing.JButton adder;
     private javax.swing.JComboBox<String> columnnames;
     private javax.swing.JButton editor;
-    private javax.swing.JButton jButton1;
-    private javax.swing.JLabel jLabel1;
-    private javax.swing.JLabel jLabel2;
-    private javax.swing.JLabel jLabel3;
-    private javax.swing.JLabel jLabel4;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JTextField jTextField1;

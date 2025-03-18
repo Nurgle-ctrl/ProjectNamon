@@ -14,11 +14,13 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Date;
 import java.util.Vector;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JOptionPane;
 import javax.swing.JTable;
+import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableModel;
 
 /**
@@ -49,208 +51,232 @@ public class helper {
         }
     }
     
-    public void displaythis(String cat, int index, String whe, String lim, String delim, JTable thetable) {
+public void displaythis(String cat, int index, String whe, String lim, String delim, JTable thetable) {
+        long startTime = System.nanoTime(); // Start timing
         executor.submit(() -> {
-            try {
             myPSTmt = null;
             myRs = null;
-            model.setRowCount(0);
-            System.out.println(index);                
-                
+            try {
+                model.setRowCount(0);
                 System.out.println("Thread " + Thread.currentThread().getName() + " - Preparing query");
-                if (!whe.isBlank()){
+
+                // Prepare the query
+                if ("All".equalsIgnoreCase(cat)) {
+                    query = "SELECT * FROM tblentry " + lim + " " + delim;
+                    myPSTmt = myConn.prepareStatement(query, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+                    myRs = myPSTmt.executeQuery();
+                } else if (!whe.isBlank()) {
                     switch (index) {
-                        case 1, 2 -> {
-                            query = "select * from tblentry where "+ cat +" = ? "+ lim +" "+ delim;
-                            myPSTmt = myConn.prepareStatement(query);
+                        case 2, 3 -> {
+                            query = "SELECT * FROM tblentry WHERE " + cat + " = ? " + lim + " " + delim;
+                            myPSTmt = myConn.prepareStatement(query, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
                             myPSTmt.setInt(1, Integer.parseInt(whe));
                         }
-                        case 8, 10, 11, 12, 13, 14 -> {
-                            query = "select * from tblentry where "+ cat +" = ? "+ lim +" "+ delim;
-                            myPSTmt = myConn.prepareStatement(query);
-                            myPSTmt.setDouble(1, Double.parseDouble(whe));                            
+                        case 9, 11, 12, 13, 14, 15 -> {
+                            query = "SELECT * FROM tblentry WHERE " + cat + " = ? " + lim + " " + delim;
+                            myPSTmt = myConn.prepareStatement(query, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+                            myPSTmt.setDouble(1, Double.parseDouble(whe));
                         }
-                        case 3 -> {
+                        case 4 -> {
                             if (whe.matches("\\d{4}-\\d{2}-\\d{2}")) {
-                                query = "select * from tblentry where " + cat + " = ? " + lim + " " + delim;
-                                myPSTmt = myConn.prepareStatement(query);
-                                java.sql.Date sqlDate = java.sql.Date.valueOf(whe);
-                                myPSTmt.setDate(1, sqlDate);
-                            } else if (whe.matches("\\d{4}-\\d{2}")) { // Year and month: YYYY-MM
-                                query = "select * from tblentry where year(" + cat + ") = ? and month(" + cat + ") = ? " + lim + " " + delim;
-                                myPSTmt = myConn.prepareStatement(query);
+                                query = "SELECT * FROM tblentry WHERE " + cat + " = ? " + lim + " " + delim;
+                                myPSTmt = myConn.prepareStatement(query, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+                                myPSTmt.setDate(1, java.sql.Date.valueOf(whe));
+                            } else if (whe.matches("\\d{4}-\\d{2}")) {
+                                query = "SELECT * FROM tblentry WHERE YEAR(" + cat + ") = ? AND MONTH(" + cat + ") = ? " + lim + " " + delim;
+                                myPSTmt = myConn.prepareStatement(query, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
                                 String[] parts = whe.split("-");
-                                myPSTmt.setInt(1, Integer.parseInt(parts[0])); // Year
-                                myPSTmt.setInt(2, Integer.parseInt(parts[1])); // Month
-                            } else { // Year only: YYYY
-                                query = "select * from tblentry where year(" + cat + ") = ? " + lim + " " + delim;
-                                myPSTmt = myConn.prepareStatement(query);
-                                myPSTmt.setInt(1, Integer.parseInt(whe)); // Year
+                                myPSTmt.setInt(1, Integer.parseInt(parts[0]));
+                                myPSTmt.setInt(2, Integer.parseInt(parts[1]));
+                            } else {
+                                query = "SELECT * FROM tblentry WHERE YEAR(" + cat + ") = ? " + lim + " " + delim;
+                                myPSTmt = myConn.prepareStatement(query, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+                                myPSTmt.setInt(1, Integer.parseInt(whe));
                             }
                         }
                         default -> {
-                            query = "select * from tblentry where "+ cat +" = ? "+ lim +" "+ delim;
-                            myPSTmt = myConn.prepareStatement(query);                            
+                            query = "SELECT * FROM tblentry WHERE " + cat + " = ? " + lim + " " + delim;
+                            myPSTmt = myConn.prepareStatement(query, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
                             myPSTmt.setString(1, whe);
                         }
                     }
                     System.out.println(query);
-                    myRs = myPSTmt.executeQuery();                
+                    myRs = myPSTmt.executeQuery();
+                } else {
+                    SwingUtilities.invokeLater(() ->
+                        JOptionPane.showMessageDialog(null, "Please provide a search condition for " + cat, "Error", JOptionPane.ERROR_MESSAGE));
+                    return;
                 }
-                System.out.println("Thread " + Thread.currentThread().getName() + " - Fetching results");
-                    
-                ResultSetMetaData metaData = (ResultSetMetaData) myRs.getMetaData();
-                // Total columns
-                int colCount = metaData.getColumnCount();
-                // Columns names storage
-                Vector<String> columnNames = new Vector<>();
-                //instruct columns names
-                for (int i = 1; i <= colCount; i++) {
-                    columnNames.add(metaData.getColumnName(i));
-                }
-                //Change the current column name with the instructed.
-                model.setColumnIdentifiers(columnNames);
-                while (myRs.next()) {
-                    Object[] rowData = new Object[colCount];
-                    for (int i = 0; i < colCount; i++) {
-                        rowData[i] = myRs.getObject(i + 1);
-                    }
-                    model.addRow(rowData);
-                }
-                
-                thetable.setModel(model);
 
-                if (model.getRowCount() == 0) {
-                   JOptionPane.showMessageDialog(null, "No records found.", "Search Result", JOptionPane.INFORMATION_MESSAGE);
+                long queryEndTime = System.nanoTime();
+                System.out.println("Query execution time: " + (queryEndTime - startTime) / 1_000_000.0 + " ms");
+
+                if (myRs != null) {
+                    // Set column names
+                    ResultSetMetaData metaData = (ResultSetMetaData) myRs.getMetaData();
+                    int colCount = metaData.getColumnCount();
+                    Vector<String> columnNames = new Vector<>();
+                    for (int i = 1; i <= colCount; i++) {
+                        columnNames.add(metaData.getColumnName(i));
+                    }
+                    model.setColumnIdentifiers(columnNames);
+
+                    // Get row count for chunking
+                    myRs.last();
+                    int rowCount = myRs.getRow();
+                    myRs.beforeFirst();
+                    System.out.println("Total rows to process: " + rowCount);
+
+                    // Multi-threaded processing
+                    int chunkSize = Math.max(100000, rowCount / Runtime.getRuntime().availableProcessors());
+                    int threadCount = (int) Math.ceil((double) rowCount / chunkSize);
+                    CompletableFuture<?>[] futures = new CompletableFuture<?>[threadCount];
+
+                    for (int i = 0; i < threadCount; i++) {
+                        final int startRow = i * chunkSize + 1;
+                        final int endRow = Math.min((i + 1) * chunkSize, rowCount);
+                        futures[i] = CompletableFuture.runAsync(() -> {
+                            Vector<Vector<Object>> chunkRows = new Vector<>();
+                            try {
+                                synchronized (myRs) { // Thread-safe ResultSet access
+                                    myRs.absolute(startRow);
+                                    for (int row = startRow; row <= endRow && myRs.next(); row++) {
+                                        Vector<Object> rowData = new Vector<>(colCount);
+                                        for (int col = 1; col <= colCount; col++) {
+                                            rowData.add(myRs.getObject(col));
+                                        }
+                                        chunkRows.add(rowData);
+                                    }
+                                }
+                                synchronized (model) { // Thread-safe model updates
+                                    for (Vector<Object> row : chunkRows) {
+                                        model.addRow(row);
+                                    }
+                                }
+                            } catch (SQLException e) {
+                                System.err.println("Error in thread " + Thread.currentThread().getName() + ": " + e.getMessage());
+                            }
+                        }, executor);
+                    }
+
+                    CompletableFuture.allOf(futures).join();
+                    long processEndTime = System.nanoTime();
+                    System.out.println("Processing time (multi-threaded): " + (processEndTime - queryEndTime) / 1_000_000.0 + " ms");
+
+                    SwingUtilities.invokeLater(() -> {
+                        thetable.setModel(model);
+                        if (model.getRowCount() == 0) {
+                            JOptionPane.showMessageDialog(null, "No records found.", "Search Result", JOptionPane.INFORMATION_MESSAGE);
+                        }
+                        long uiUpdateEndTime = System.nanoTime();
+                        System.out.println("UI update time: " + (uiUpdateEndTime - processEndTime) / 1_000_000.0 + " ms");
+                        System.out.println("Total execution time: " + (uiUpdateEndTime - startTime) / 1_000_000.0 + " ms");
+                    });
                 }
-            } catch (SQLException e){
-                JOptionPane.showMessageDialog(null,"SQL Error." + e.getMessage(),"Error", JOptionPane.ERROR_MESSAGE);
+            } catch (SQLException e) {
+                SwingUtilities.invokeLater(() ->
+                    JOptionPane.showMessageDialog(null, "SQL Error: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE));
             } finally {
                 try {
-                    myPSTmt.close();
-                } catch (SQLException ex) {
-                    Logger.getLogger(helper.class.getName()).log(Level.SEVERE, null, ex);
+                    if (myRs != null) myRs.close();
+                    if (myPSTmt != null) myPSTmt.close();
+                } catch (SQLException e) {
+                    Logger.getLogger(helper.class.getName()).log(Level.SEVERE, "Error closing resources", e);
                 }
             }
         });
-           
     }
-    public boolean checker(String cat, int index, String whe) {       
+
+    public boolean checker(String cat, int index, String whe) {
         try {
             switch (index) {
-                case 1, 2 -> Integer.valueOf(whe);
-                case 3 -> {
-                    if (whe.matches("\\d{4}-\\d{2}-\\d{2}")) {
-                    return true;
-                    }
-                    // Check for year and month (YYYY-MM)
-                    if (whe.matches("\\d{4}-\\d{2}")) {
-                        return true;
-                    }
-                    // Check for year only (YYYY)
-                    if (whe.matches("\\d{4}")) {
-                        return true;
-                    }
+                case 2, 3 -> Integer.valueOf(whe);
+                case 4 -> {
+                    if (whe.matches("\\d{4}-\\d{2}-\\d{2}")) return true;
+                    if (whe.matches("\\d{4}-\\d{2}")) return true;
+                    if (whe.matches("\\d{4}")) return true;
                     return false;
                 }
-                case 4, 5, 6, 7, 9 -> {
-                    if (whe.matches(".*\\d.*")) {
-                        return false;
-                    }
+                case 1, 5, 6, 7, 8, 10 -> {
+                    if (whe.matches(".*\\d.*")) return false;
                 }
-                case 8, 10, 11, 12, 13, 14 -> Double.valueOf(whe);
-                default -> { return false; 
-                }
+                case 9, 11, 12, 13, 14, 15 -> Double.valueOf(whe);
+                default -> { return false; }
             }
         } catch (NumberFormatException e) {
             return false;
         }
         return true;
     }
-    public void addEntry(String[] data){
+
+    public void addEntry(String[] data) {
         executor.submit(() -> {
             if (data == null || data.length != 13) {
-                JOptionPane.showMessageDialog(null, "Invalid data", "Error", JOptionPane.ERROR_MESSAGE);
+                SwingUtilities.invokeLater(() ->
+                    JOptionPane.showMessageDialog(null, "Invalid data", "Error", JOptionPane.ERROR_MESSAGE));
                 return;
-           }        
-           try {
-               query = "INSERT INTO tblentry (Posted, DatePosted, DocNumber, BusinessCode, LocationCode, ModuleCode, AccountCode, NormalBalance, Amount, Amount2, Credit, Debit, FinalAmount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-               myPSTmt = myConn.prepareStatement(query);
-               myPSTmt.setInt(1, Integer.parseInt(data[0]));
-               myPSTmt.setDate(2, java.sql.Date.valueOf(data[1])); // Assumes YYYY-MM-DD format
-               myPSTmt.setString(3, data[2]);
-               myPSTmt.setString(4, data[3]);
-               myPSTmt.setString(5, data[4]);
-               myPSTmt.setString(6, data[5]);
-               myPSTmt.setString(7, data[6]);
-               myPSTmt.setString(8, data[7]);
-               myPSTmt.setDouble(9, Double.parseDouble(data[8]));
-               myPSTmt.setDouble(10, Double.parseDouble(data[9]));
-               myPSTmt.setDouble(11, Double.parseDouble(data[10]));
-               myPSTmt.setDouble(12, Double.parseDouble(data[11]));
-               myPSTmt.setDouble(13, Double.parseDouble(data[12]));
-               myPSTmt.executeUpdate();
-               myPSTmt.close();
-               JOptionPane.showMessageDialog(null, "Entry added successfully!");
-           } catch (SQLException | NumberFormatException e) {
-               JOptionPane.showMessageDialog(null, "Error adding entry: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-           }    
+            }
+            try (PreparedStatement pstmt = myConn.prepareStatement(
+                    "INSERT INTO tblentry (Posted, DatePosted, DocNumber, BusinessCode, LocationCode, ModuleCode, AccountCode, NormalBalance, Amount, Amount2, Credit, Debit, FinalAmount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
+                pstmt.setInt(1, Integer.parseInt(data[0]));
+                pstmt.setDate(2, java.sql.Date.valueOf(data[1]));
+                pstmt.setString(3, data[2]);
+                pstmt.setString(4, data[3]);
+                pstmt.setString(5, data[4]);
+                pstmt.setString(6, data[5]);
+                pstmt.setString(7, data[6]);
+                pstmt.setString(8, data[7]);
+                pstmt.setDouble(9, Double.parseDouble(data[8]));
+                pstmt.setDouble(10, Double.parseDouble(data[9]));
+                pstmt.setDouble(11, Double.parseDouble(data[10]));
+                pstmt.setDouble(12, Double.parseDouble(data[11]));
+                pstmt.setDouble(13, Double.parseDouble(data[12]));
+                pstmt.executeUpdate();
+                SwingUtilities.invokeLater(() ->
+                    JOptionPane.showMessageDialog(null, "Entry added successfully!", "Success", JOptionPane.INFORMATION_MESSAGE));
+            } catch (SQLException | NumberFormatException e) {
+                SwingUtilities.invokeLater(() ->
+                    JOptionPane.showMessageDialog(null, "Error adding entry: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE));
+            }
         });
     }
-//    public String[] getter(JTable thetable, int editableRow){
-//        String[] data = new String[14];
-//        executor.submit(() -> {
-//        data[0] = thetable.getValueAt(editableRow, 0).toString();
-//        data[1] = thetable.getValueAt(editableRow, 1).toString();
-//        data[2] = thetable.getValueAt(editableRow, 2).toString();
-//        data[3] = thetable.getValueAt(editableRow, 3).toString();
-//        data[4] = thetable.getValueAt(editableRow, 4).toString();
-//        data[5] = thetable.getValueAt(editableRow, 5).toString();
-//        data[6] = thetable.getValueAt(editableRow, 6).toString();
-//        data[7] = thetable.getValueAt(editableRow, 7).toString();
-//        data[8] = thetable.getValueAt(editableRow, 8).toString();
-//        data[9] = thetable.getValueAt(editableRow, 9).toString();
-//        data[10] = thetable.getValueAt(editableRow, 10).toString();
-//        data[11] = thetable.getValueAt(editableRow, 11).toString();
-//        data[12] = thetable.getValueAt(editableRow, 12).toString();
-//        data[13] = thetable.getValueAt(editableRow, 13).toString();   
-//        return data;
-//        });
-//        return data;
-//    }
-    public void updateEntry(String[] data, String entryId, int row, JTable thetable){
+
+    public void updateEntry(String[] data, String entryId, int row, JTable thetable) {
         if (data == null || data.length != 13) {
-            JOptionPane.showMessageDialog(null, "Invalid data: must provide 13 elements.", "Error", JOptionPane.ERROR_MESSAGE);
+            SwingUtilities.invokeLater(() ->
+                JOptionPane.showMessageDialog(null, "Invalid data: must provide 13 elements.", "Error", JOptionPane.ERROR_MESSAGE));
             return;
-        }        
+        }
         executor.submit(() -> {
-            try {
-                myPSTmt = myConn.prepareStatement("UPDATE tblentry SET Posted = ?, DatePosted = ?, DocNumber = ?, BusinessCode = ?, LocationCode = ?, ModuleCode = ?, AccountCode = ?, NormalBalance = ?, Amount = ?, Amount2 = ?, Credit = ?, Debit = ?, FinalAmount = ? WHERE EntryID = ?");
-                myPSTmt.setInt(1, Integer.parseInt(data[0]));
-                myPSTmt.setDate(2, java.sql.Date.valueOf(data[1]));
-                myPSTmt.setString(3, data[2]);
-                myPSTmt.setString(4, data[3]);
-                myPSTmt.setString(5, data[4]);
-                myPSTmt.setString(6, data[5]);
-                myPSTmt.setString(7, data[6]);
-                myPSTmt.setString(8, data[7]);
-                myPSTmt.setDouble(9, Double.parseDouble(data[8]));
-                myPSTmt.setDouble(10, Double.parseDouble(data[9]));
-                myPSTmt.setDouble(11, Double.parseDouble(data[10]));
-                myPSTmt.setDouble(12, Double.parseDouble(data[11]));
-                myPSTmt.setDouble(13, Double.parseDouble(data[12]));
-                myPSTmt.setInt(14, Integer.parseInt(entryId));
-                int rowsAffected = myPSTmt.executeUpdate();
+            try (PreparedStatement pstmt = myConn.prepareStatement(
+                    "UPDATE tblentry SET Posted = ?, DatePosted = ?, DocNumber = ?, BusinessCode = ?, LocationCode = ?, ModuleCode = ?, AccountCode = ?, NormalBalance = ?, Amount = ?, Amount2 = ?, Credit = ?, Debit = ?, FinalAmount = ? WHERE EntryID = ?")) {
+                pstmt.setInt(1, Integer.parseInt(data[0]));
+                pstmt.setDate(2, java.sql.Date.valueOf(data[1]));
+                pstmt.setString(3, data[2]);
+                pstmt.setString(4, data[3]);
+                pstmt.setString(5, data[4]);
+                pstmt.setString(6, data[5]);
+                pstmt.setString(7, data[6]);
+                pstmt.setString(8, data[7]);
+                pstmt.setDouble(9, Double.parseDouble(data[8]));
+                pstmt.setDouble(10, Double.parseDouble(data[9]));
+                pstmt.setDouble(11, Double.parseDouble(data[10]));
+                pstmt.setDouble(12, Double.parseDouble(data[11]));
+                pstmt.setDouble(13, Double.parseDouble(data[12]));
+                pstmt.setInt(14, Integer.parseInt(entryId));
+                int rowsAffected = pstmt.executeUpdate();
                 if (rowsAffected > 0) {
-                    JOptionPane.showMessageDialog(null, "Entry updated successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+                    SwingUtilities.invokeLater(() -> {
+                        JOptionPane.showMessageDialog(null, "Entry updated successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+                        thetable.setValueAt(entryId, row, 0);
+                        for (int i = 0; i < data.length; i++) {
+                            thetable.setValueAt(data[i], row, i + 1);
+                        }
+                    });
                 } else {
-                    JOptionPane.showMessageDialog(null, "No entry found with EntryID: " + entryId, "Error", JOptionPane.ERROR_MESSAGE);
+                    SwingUtilities.invokeLater(() ->
+                        JOptionPane.showMessageDialog(null, "No entry found with EntryID: " + entryId, "Error", JOptionPane.ERROR_MESSAGE));
                 }
-                myPSTmt.close();
-                thetable.setValueAt(entryId, row, 0);
-                for (int i = 0; i < data.length; i++) {
-                    thetable.setValueAt(data[i], row, i+1);
-                }              
             } catch (SQLException e) {
                 JOptionPane.showMessageDialog(null, "Error updating entry: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             } catch (NumberFormatException e) {
@@ -258,24 +284,33 @@ public class helper {
             } catch (IllegalArgumentException e){
                 JOptionPane.showMessageDialog(null, "Error updating entry: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
-        });        
+        });
     }
+
     public void deleteEntry(String entryId) {
         executor.submit(() -> {
-            try {
-                myPSTmt = myConn.prepareStatement("DELETE FROM tblentry WHERE EntryID = ?");
-                myPSTmt.setString(1, entryId);
-                int rowsAffected = myPSTmt.executeUpdate();
+            try (PreparedStatement pstmt = myConn.prepareStatement("DELETE FROM tblentry WHERE EntryID = ?")) {
+                pstmt.setString(1, entryId);
+                int rowsAffected = pstmt.executeUpdate();
                 if (rowsAffected > 0) {
-                    JOptionPane.showMessageDialog(null, "Entry deleted successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+                    SwingUtilities.invokeLater(() ->
+                        JOptionPane.showMessageDialog(null, "Entry deleted successfully!", "Success", JOptionPane.INFORMATION_MESSAGE));
                 } else {
-                    JOptionPane.showMessageDialog(null, "No entry found with EntryID: " + entryId, "Error", JOptionPane.ERROR_MESSAGE);
+                    SwingUtilities.invokeLater(() ->
+                        JOptionPane.showMessageDialog(null, "No entry found with EntryID: " + entryId, "Error", JOptionPane.ERROR_MESSAGE));
                 }
             } catch (SQLException e) {
-                JOptionPane.showMessageDialog(null, "Error deleting entry: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                SwingUtilities.invokeLater(() ->
+                    JOptionPane.showMessageDialog(null, "Error deleting entry: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE));
             }
         });
-    }     
-  
-   
+    }
+
+    public void closeResources() {
+        try {
+            if (myConn != null && !myConn.isClosed()) myConn.close();
+        } catch (SQLException e) {
+            Logger.getLogger(helper.class.getName()).log(Level.SEVERE, "Error closing connection", e);
+        }
+    }
 }

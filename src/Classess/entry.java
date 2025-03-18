@@ -5,6 +5,7 @@
 package Classess;
 
 import javax.swing.JTable;
+import javax.swing.JTextField;
 
 /**
  *
@@ -18,22 +19,19 @@ public class entry extends javax.swing.JFrame {
     private boolean isEditMode = false;
     private int row = -1;
     private JTable thetable;
+    private final JTextField[] fields;
     /**
      * Creates new form entry
      * @param helpus
      */
     public entry(helper helpus) {
         initComponents();
+        this.fields = new JTextField[]{posted, datePosted, docNumber, businessCode, locationCode, moduleCode, accountCode, normalBalance, amount, amount2, credit, debit, finalAmount};
         this.helpus = helpus;
     }
     
     private void saveEntry() {
         String[] data = new String[13];
-        javax.swing.JTextField[] fields = {
-            posted, datePosted, docNumber, businessCode, locationCode, 
-            moduleCode, accountCode, normalBalance, amount, amount2, 
-            credit, debit, finalAmount
-        };
         for (int i = 0; i < fields.length; i++) {
             data[i] = fields[i].getText().trim();
         }
@@ -47,6 +45,21 @@ public class entry extends javax.swing.JFrame {
     public void editedRow(int row, JTable table){
         this.row = row;
         this.thetable = table;
+    }
+    public void setField() {
+        if (entryID != null) {
+            entryID.setText("");
+            entryID.setVisible(false);
+        } else {
+            System.err.println("entryID is null in setField!");
+        }
+        for (JTextField field : fields) {
+            if (field != null) {
+                field.setText("");
+            } else {
+                System.err.println("A field in fields array is null!");
+            }
+        }
     }
     // Getters and Setters
     public void setEntryId(String entryId) {
@@ -156,15 +169,21 @@ public class entry extends javax.swing.JFrame {
         });
         getContentPane().setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
-        jPanel1.setBackground(new java.awt.Color(255, 255, 0));
+        jPanel1.setBackground(new java.awt.Color(0, 0, 102));
 
         title.setFont(new java.awt.Font("Segoe UI", 0, 24)); // NOI18N
+        title.setForeground(new java.awt.Color(255, 255, 255));
         title.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        title.setText("entry here!");
+        title.setText("ENTRY HERE");
         title.setToolTipText("");
 
         entryID.setEditable(false);
         entryID.setText("entryID");
+        entryID.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                entryIDActionPerformed(evt);
+            }
+        });
 
         posted.setText("Posted");
         posted.addMouseListener(new java.awt.event.MouseAdapter() {
@@ -280,33 +299,47 @@ public class entry extends javax.swing.JFrame {
             }
         });
 
-        jLabel1.setText("jLabel1");
+        jLabel1.setForeground(new java.awt.Color(255, 255, 255));
+        jLabel1.setText("ENTRY ID");
 
-        jLabel3.setText("jLabel1");
+        jLabel3.setForeground(new java.awt.Color(255, 255, 255));
+        jLabel3.setText("POSTED");
 
-        jLabel4.setText("jLabel1");
+        jLabel4.setForeground(new java.awt.Color(255, 255, 255));
+        jLabel4.setText("DATE POSTED");
 
-        jLabel5.setText("jLabel1");
+        jLabel5.setForeground(new java.awt.Color(255, 255, 255));
+        jLabel5.setText("DOC NUMBER");
 
-        jLabel6.setText("jLabel1");
+        jLabel6.setForeground(new java.awt.Color(255, 255, 255));
+        jLabel6.setText("BUSINESS CODE");
 
-        jLabel7.setText("jLabel1");
+        jLabel7.setForeground(new java.awt.Color(255, 255, 255));
+        jLabel7.setText("LOCATION CODE");
 
-        jLabel8.setText("jLabel1");
+        jLabel8.setForeground(new java.awt.Color(255, 255, 255));
+        jLabel8.setText("MODULE CODE");
 
-        jLabel9.setText("jLabel1");
+        jLabel9.setForeground(new java.awt.Color(255, 255, 255));
+        jLabel9.setText("ACCOUNT CODE");
 
-        jLabel10.setText("jLabel1");
+        jLabel10.setForeground(new java.awt.Color(255, 255, 255));
+        jLabel10.setText("NORMAL BALANCE");
 
-        jLabel11.setText("jLabel1");
+        jLabel11.setForeground(new java.awt.Color(255, 255, 255));
+        jLabel11.setText("AMOUNT");
 
-        jLabel12.setText("jLabel1");
+        jLabel12.setForeground(new java.awt.Color(255, 255, 255));
+        jLabel12.setText("AMOUNT2");
 
-        jLabel13.setText("jLabel1");
+        jLabel13.setForeground(new java.awt.Color(255, 255, 255));
+        jLabel13.setText("CREDIT");
 
-        jLabel14.setText("jLabel1");
+        jLabel14.setForeground(new java.awt.Color(255, 255, 255));
+        jLabel14.setText("DEBIT");
 
-        jLabel15.setText("jLabel1");
+        jLabel15.setForeground(new java.awt.Color(255, 255, 255));
+        jLabel15.setText("FINAL AMOUNT");
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
@@ -538,6 +571,10 @@ public class entry extends javax.swing.JFrame {
     mouseX = evt.getX();
     mouseY = evt.getY();
     }//GEN-LAST:event_formMousePressed
+
+    private void entryIDActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_entryIDActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_entryIDActionPerformed
 
     /**
      * @param args the command line arguments
