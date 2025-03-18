@@ -242,7 +242,10 @@ public class main extends javax.swing.JFrame {
         // TODO add your handling code here:
         category = columnnames.getSelectedItem().toString();
         index = columnnames.getSelectedIndex() + 1;
+        System.out.println(category);
+        System.out.println(index);
         where = jTextField1.getText().trim();
+        System.out.println(where);
         postlimit = limit.getSelectedItem().toString().toUpperCase().equalsIgnoreCase("all") ? "" : limit.getSelectedItem().toString().toUpperCase();
         System.out.println(postlimit);
         thelimit = limiter.isEnabled() ? limiter.getText().trim() : "";

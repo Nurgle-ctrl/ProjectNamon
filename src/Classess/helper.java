@@ -69,28 +69,28 @@ public void displaythis(String cat, int index, String whe, String lim, String de
                     switch (index) {
                         case 2, 3 -> {
                             query = "SELECT * FROM tblentry WHERE " + cat + " = ? " + lim + " " + delim;
-                            myPSTmt = myConn.prepareStatement(query, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+                            myPSTmt = myConn.prepareStatement(query);
                             myPSTmt.setInt(1, Integer.parseInt(whe));
                         }
                         case 9, 11, 12, 13, 14, 15 -> {
                             query = "SELECT * FROM tblentry WHERE " + cat + " = ? " + lim + " " + delim;
-                            myPSTmt = myConn.prepareStatement(query, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+                            myPSTmt = myConn.prepareStatement(query);
                             myPSTmt.setDouble(1, Double.parseDouble(whe));
                         }
                         case 4 -> {
                             if (whe.matches("\\d{4}-\\d{2}-\\d{2}")) {
                                 query = "SELECT * FROM tblentry WHERE " + cat + " = ? " + lim + " " + delim;
-                                myPSTmt = myConn.prepareStatement(query, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+                                myPSTmt = myConn.prepareStatement(query);
                                 myPSTmt.setDate(1, java.sql.Date.valueOf(whe));
                             } else if (whe.matches("\\d{4}-\\d{2}")) {
                                 query = "SELECT * FROM tblentry WHERE YEAR(" + cat + ") = ? AND MONTH(" + cat + ") = ? " + lim + " " + delim;
-                                myPSTmt = myConn.prepareStatement(query, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+                                myPSTmt = myConn.prepareStatement(query);
                                 String[] parts = whe.split("-");
                                 myPSTmt.setInt(1, Integer.parseInt(parts[0]));
                                 myPSTmt.setInt(2, Integer.parseInt(parts[1]));
                             } else {
                                 query = "SELECT * FROM tblentry WHERE YEAR(" + cat + ") = ? " + lim + " " + delim;
-                                myPSTmt = myConn.prepareStatement(query, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+                                myPSTmt = myConn.prepareStatement(query);
                                 myPSTmt.setInt(1, Integer.parseInt(whe));
                             }
                         }
@@ -132,32 +132,34 @@ public void displaythis(String cat, int index, String whe, String lim, String de
                     int threadCount = (int) Math.ceil((double) rowCount / chunkSize);
                     CompletableFuture<?>[] futures = new CompletableFuture<?>[threadCount];
 
-                    for (int i = 0; i < threadCount; i++) {
-                        final int startRow = i * chunkSize + 1;
-                        final int endRow = Math.min((i + 1) * chunkSize, rowCount);
-                        futures[i] = CompletableFuture.runAsync(() -> {
-                            Vector<Vector<Object>> chunkRows = new Vector<>();
-                            try {
-                                synchronized (myRs) { // Thread-safe ResultSet access
-                                    myRs.absolute(startRow);
-                                    for (int row = startRow; row <= endRow && myRs.next(); row++) {
-                                        Vector<Object> rowData = new Vector<>(colCount);
-                                        for (int col = 1; col <= colCount; col++) {
-                                            rowData.add(myRs.getObject(col));
-                                        }
-                                        chunkRows.add(rowData);
+                for (int i = 0; i < threadCount; i++) {
+                    final int startRow = i * chunkSize + 1;
+                    final int endRow = Math.min((i + 1) * chunkSize, rowCount);
+                    futures[i] = CompletableFuture.runAsync(() -> {
+                        Vector<Vector<Object>> chunkRows = new Vector<>();
+                        try {
+                            synchronized (myRs) {
+                                myRs.absolute(startRow - 1); // Position before startRow
+                                int rowsProcessed = 0;
+                                while (rowsProcessed < (endRow - startRow + 1) && myRs.next()) {
+                                    Vector<Object> rowData = new Vector<>(colCount);
+                                    for (int col = 1; col <= colCount; col++) {
+                                        rowData.add(myRs.getObject(col));
                                     }
+                                    chunkRows.add(rowData);
+                                    rowsProcessed++;
                                 }
-                                synchronized (model) { // Thread-safe model updates
-                                    for (Vector<Object> row : chunkRows) {
-                                        model.addRow(row);
-                                    }
-                                }
-                            } catch (SQLException e) {
-                                System.err.println("Error in thread " + Thread.currentThread().getName() + ": " + e.getMessage());
                             }
-                        }, executor);
-                    }
+                            synchronized (model) {
+                                for (Vector<Object> row : chunkRows) {
+                                    model.addRow(row);
+                                }
+                            }
+                        } catch (SQLException e) {
+                            System.err.println("Error in thread " + Thread.currentThread().getName() + ": " + e.getMessage());
+                        }
+                    }, executor);
+                }
 
                     CompletableFuture.allOf(futures).join();
                     long processEndTime = System.nanoTime();
@@ -198,7 +200,7 @@ public void displaythis(String cat, int index, String whe, String lim, String de
                     return false;
                 }
                 case 1, 5, 6, 7, 8, 10 -> {
-                    if (whe.matches(".*\\d.*")) return false;
+                    if (whe.matches(".*\\d.*")) return true;
                 }
                 case 9, 11, 12, 13, 14, 15 -> Double.valueOf(whe);
                 default -> { return false; }
