@@ -246,11 +246,11 @@ public class main extends javax.swing.JFrame {
         postlimit = limit.getSelectedItem().toString().toUpperCase().equalsIgnoreCase("all") ? "" : limit.getSelectedItem().toString().toUpperCase();
         System.out.println(postlimit);
         thelimit = limiter.isEnabled() ? limiter.getText().trim() : "";
-        if (where.isEmpty() && !category.equals("All")) {
+        if (where.isEmpty() && category.equals("All")) {
             JOptionPane.showMessageDialog(null, "Please enter a search condition","Input Error", JOptionPane.WARNING_MESSAGE);
             return;
         }
-        if (!limit.getSelectedItem().equals("all") && limiter.getText().isEmpty()) {
+        if (!limit.getSelectedItem().equals("All") && limiter.getText().isEmpty()) {
             JOptionPane.showMessageDialog(null, "Limiter is not limiting", "Limiter Error", JOptionPane.ERROR_MESSAGE);
             return;            
         }
